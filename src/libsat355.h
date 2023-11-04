@@ -1,5 +1,5 @@
-#ifndef _HELLOWORLD_H_
-#define _HELLOWORLD_H_
+#ifndef LIBSAT355_H
+#define LIBSAT355_H
 
 #include <stdio.h>
 
@@ -7,4 +7,4 @@
 
 DLL_EXPORT void HelloWorld();
 
-#endif // _HELLOWORLD_H_
+#endif // LIBSAT355_H
