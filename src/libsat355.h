@@ -10,12 +10,20 @@
 extern "C" {
 #endif
 
-DLL_EXPORT void HelloWorld();
+enum ErrorCode
+{
+    kOK = 0,
+    kInvalidTLE,
+    kInvalidTime,
+    kInternalError
+};
+
+DLL_EXPORT ErrorCode HelloWorld();
 
 // orbit_to_lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
-DLL_EXPORT void orbit_to_lla(	
+DLL_EXPORT ErrorCode orbit_to_lla(	
                     const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2
@@ -27,7 +35,7 @@ DLL_EXPORT void orbit_to_lla(
 // orbit_to_lla2:
 // Calculate satellite Lat/Lon/Alt plus look-angles
 // for time "now" using input TLE-format orbital data
-DLL_EXPORT void orbit_to_lla2(	
+DLL_EXPORT ErrorCode orbit_to_lla2(	
                     const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2

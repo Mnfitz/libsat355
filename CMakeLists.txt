@@ -2,8 +2,7 @@
 cmake_minimum_required(VERSION 2.8...3.13)
 
 # compile flags: -Wall "enable all compiler warnings"
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall /wd4514 /wd4668 /wd4062 /wd5267 /wd4061 /wd5264 /wd4820 /wd5038 /wd5045")
 # c++ language version level: c++11
 set(CMAKE_CXX_STANDARD 11)
 # cmake project name: "project1"
@@ -58,6 +57,7 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 add_library(libsat SHARED ${SRC_FILES})
+#target_compile_definitions(libsat PUBLIC /wd 4514)
 target_include_directories(libsat PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 install(TARGETS libsat DESTINATION build)
 
