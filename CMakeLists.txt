@@ -22,13 +22,13 @@ foreach(config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
 
     foreach(var CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${config} CMAKE_LIBRARY_OUTPUT_DIRECTORY_${config} CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config})
         #lib\win10-x86
-        set(${var} "${CMAKE_BINARY_DIR}/lib/win10-x64")
+        set(${var} "${CMAKE_BINARY_DIR}/../lib/win-x64")
         string(TOLOWER "${${var}}" ${var})
     endforeach()
 
 endforeach()
 
-MESSAGE (STATUS "${CMAKE_BINARY_DIR}/lib/win10-x64: " ${CMAKE_BINARY_DIR}/lib/win10-x64)
+MESSAGE (STATUS "${CMAKE_BINARY_DIR}/../lib/win-x64: " ${CMAKE_BINARY_DIR}/../lib/win-x64)
 
  ## Output directory for libraries in Debug configuration
  #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG})
@@ -61,3 +61,4 @@ target_include_directories(libsat PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 install(TARGETS libsat DESTINATION build)
 
 # cmake -G "Visual Studio 17 2022"
+# cmake -G "Visual Studio 17 2022" -S . -B ./build

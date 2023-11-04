@@ -1,6 +1,14 @@
-#include "helloworld.hpp"
-#include <windows.h>
+// self
+#include "libsat355.h"
+
+// std
+#include <iostream>
+
+extern "C" {
+
 void HelloWorld() 
 {
-	MessageBox(NULL, L"Exported test() function loaded", L"Success", 0);
+	std::cout << "Hello World!" << std::endl;
 }
+
+} // extern "C"
