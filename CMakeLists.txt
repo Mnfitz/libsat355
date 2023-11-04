@@ -50,7 +50,8 @@ MESSAGE (STATUS "${CMAKE_BINARY_DIR}/../lib/win-x64: " ${CMAKE_BINARY_DIR}/../li
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build)
 
 include_directories(cppOrbitTools/orbitTools/core)
-file(GLOB SRC_FILES helloworld.cpp dllmain.cpp cppOrbitTools/orbitTools/core/*.cpp)
+include_directories(cppOrbitTools)
+file(GLOB SRC_FILES src/*.cpp cppOrbitTools/orbitTools/core/*.cpp cppOrbitTools/orbitTools/orbit/*.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -1,6 +1,5 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#include <winnt.h>
-#include <minwindef.h>
+#include <windows.h>
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
