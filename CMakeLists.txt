@@ -9,12 +9,12 @@ set(CMAKE_CXX_STANDARD 11)
 # cmake project name: "project1"
 project(libsat355 VERSION 0.1.0)
 
-# add CTest capability to "cse340"
+# add CTest capability
 include(CTest)
 enable_testing()
 
 
-#Loop over all the possible configurations
+#Tricky: you determine whether you're build for x64(64bit) or x86(32bits) by examining the sizeof(void*) pointer you're compiling for.
 math(EXPR platform_bits "${CMAKE_SIZEOF_VOID_P} * 8")
 set(platform_dir ${CMAKE_SYSTEM_NAME}${platform_bits}-${CMAKE_CXX_COMPILER_ID}${CMAKE_CXX_COMPILER_VERSION})
 
