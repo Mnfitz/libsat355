@@ -1,11 +1,21 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include <windows.h>
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved)
+/*
+TRICKY: BOOL is a typedef that arrives from <windows.h>.
+For an API that is cross-platform, it will cause undefined symbol compile errors when used on say Mac.
+A cross-platform return type would have to be something like int instead.
+
+That being said: dllmain.cpp is "windows specific".
+so this is the exception where BOOL is fine, because your Mac version will have a completely different
+source file that is used for it's "shared object (.so, instead of .dll)" entry point.
+*/
+
+BOOL APIENTRY DllMain( HMODULE inModule,
+                       DWORD  inCall,
+                       LPVOID inReserved)
 {
-    switch (ul_reason_for_call)
+    switch (inCall)
     {
     case DLL_PROCESS_ATTACH:
     case DLL_THREAD_ATTACH:
@@ -15,29 +25,3 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     }
     return TRUE;
 }
-
-
-/*
-
-#include "stdafx.h"
-#include <windows.h>
-#include <stdio.h>
-
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
-{
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-		MessageBox(NULL, L"DllMain loaded", L"Success", 0);
-	case DLL_PROCESS_DETACH:
-		break;
-	case DLL_THREAD_ATTACH:
-		break;
-	case DLL_THREAD_DETACH:
-		break;
-	}
-	return TRUE;
-}
-*/
-

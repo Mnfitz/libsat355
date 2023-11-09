@@ -24,7 +24,7 @@ const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h
 
 extern "C" {
 
-ErrorCode HelloWorld()
+int HelloWorld()
 {
 	std::cout << "Hello World!" << std::endl;
 
@@ -34,7 +34,7 @@ ErrorCode HelloWorld()
 // orbit_to_lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
-ErrorCode orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
+int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2
 					double* out_tleage,		// age of TLE in secs since: Jan 1, 2001 00h UTC
@@ -109,7 +109,7 @@ ErrorCode orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 // orbit2lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
-ErrorCode orbit_to_lla2(const char* in_tle1,	// TLE (Sat Name)
+int orbit_to_lla2(const char* in_tle1,	// TLE (Sat Name)
 				   const char* in_tle2,	// TLE line 1
 				   const char* in_tle3,	// TLE line 2
 				   double in_gpslat,	// my GPS latitude in degs 
