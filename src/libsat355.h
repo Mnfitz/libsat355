@@ -1,6 +1,6 @@
 #ifndef LIBSAT355_H
 #define LIBSAT355_H
-
+#include <ctime>
 #include <stdio.h>
 #include "dllmain.h"
 
@@ -30,7 +30,8 @@ DLL_EXPORT int  orbit_to_lla(
 					double* out_tleage,		// age of TLE in secs since: Jan 1, 2001 00h UTC
 					double* out_latdegs,	// latitude in degs
 					double* out_londegs,	// longitude in degs
-					double* out_altkm);		// altitude in km
+					double* out_altkm,
+					std::time_t inTime = std::time(nullptr));		// altitude in km
 
 // orbit_to_lla2:
 // Calculate satellite Lat/Lon/Alt plus look-angles

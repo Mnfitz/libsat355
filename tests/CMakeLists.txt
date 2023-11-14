@@ -1,4 +1,5 @@
 
+enable_testing()
 include(FetchContent)
 FetchContent_Declare(gtest
   QUIET
@@ -15,13 +16,13 @@ add_executable(
     )
 
 target_compile_options(unit_tests PRIVATE "/EHsc")
-
-add_test(
-    NAME
-        unit
-    COMMAND
-        ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/unit_tests
+#add_test(NAME MyTest COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} ctest -R MyTest)
+add_test(NAME unit_tests
+    COMMAND ${CMAKE_BINARY_DIR}/../lib/win-x64:unit_tests
+    -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests
     )
+
+MESSAGE(${CMAKE_BINARY_DIR}/../lib/win-x64)
 
 target_link_libraries(unit_tests
   PRIVATE
@@ -49,7 +50,7 @@ gtest_discover_tests(unit_tests
 ## configure build of googletest
 #set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 #set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
-#FetchContent_MakeAvailable(gtest)
+#FetchContent_MakeAvailable(gtest)cd 
 #
 #add_executable(
 #    unit_tests

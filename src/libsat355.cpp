@@ -2,7 +2,7 @@
 #include "libsat355.h"
 
 // std
-#include <ctime>
+
 #include <iostream>
 
 // orbittools
@@ -40,7 +40,8 @@ int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 					double* out_tleage,		// age of TLE in secs since: Jan 1, 2001 00h UTC
 					double* out_latdegs,	// latitude in degs
 					double* out_londegs,	// longitude in degs
-					double* out_altkm)		// altitude in km
+					double* out_altkm,
+					std::time_t inTime)		// altitude in km
 {
 	try
 	{
@@ -56,8 +57,9 @@ int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 		cSatellite satSGP4(tleSGP4);
 
 		// Get the Julian Date for GMT "now"
-		const std::time_t now = std::time(nullptr);
-		cJulian jdNow(now);
+		//const std::time_t now = std::time(nullptr);
+		//cJulian jdNow(now);
+		cJulian jdNow(inTime);
 
 		// Get Earth-Centered-Interial position of satellite for time: now
 		cEciTime eciSGP4 = satSGP4.PositionEci(jdNow);
