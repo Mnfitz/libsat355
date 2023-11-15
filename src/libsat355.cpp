@@ -34,14 +34,15 @@ int HelloWorld()
 // orbit_to_lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
-int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
+int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
+					const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2
+
 					double* out_tleage,		// age of TLE in secs since: Jan 1, 2001 00h UTC
 					double* out_latdegs,	// latitude in degs
 					double* out_londegs,	// longitude in degs
-					double* out_altkm,
-					std::time_t inTime)		// altitude in km
+					double* out_altkm)		// altitude in km
 {
 	try
 	{
@@ -57,9 +58,17 @@ int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 		cSatellite satSGP4(tleSGP4);
 
 		// Get the Julian Date for GMT "now"
+		// time '0' is 1970-01-01 00:00:00 UTC, AKA the Unix epoch
+		time_t epoch = 0; 
+		//Create a tm struct from epoch
+    	struct tm epoch_tm = *gmtime(&epoch);
+
+		// Add in_time seconds to epoch_tm to get inputted time in time_t format
+		epoch_tm.tm_sec += in_time;
+		time_t now = mktime(&epoch_tm);
+
 		//const std::time_t now = std::time(nullptr);
-		//cJulian jdNow(now);
-		cJulian jdNow(inTime);
+		cJulian jdNow(now);
 
 		// Get Earth-Centered-Interial position of satellite for time: now
 		cEciTime eciSGP4 = satSGP4.PositionEci(jdNow);
@@ -111,18 +120,20 @@ int orbit_to_lla(	const char* in_tle1,	// TLE (Sat Name)
 // orbit2lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
-int orbit_to_lla2(const char* in_tle1,	// TLE (Sat Name)
-				   const char* in_tle2,	// TLE line 1
-				   const char* in_tle3,	// TLE line 2
-				   double in_gpslat,	// my GPS latitude in degs 
-				   double in_gpslon,	// my GPS longitude in degs
-				   double in_gpsalt,	// my GPS altitude in km
-				   double* out_tleage,	// age of TLE in secs since: Jan 1, 2001 00h UTC
-				   double* out_latdegs,	// latitude in degs
-				   double* out_londegs,	// longitude in degs
-				   double* out_altkm,	// altitude in km
-				   double* out_azdegs,	// look angle azimuth in degs
-				   double* out_eledegs)	// look angle elevation in degs
+int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
+					const char* in_tle1,	// TLE (Sat Name)
+					const char* in_tle2,	// TLE line 1
+					const char* in_tle3,	// TLE line 2
+					
+					double in_gpslat,	// my GPS latitude in degs 
+					double in_gpslon,	// my GPS longitude in degs
+					double in_gpsalt,	// my GPS altitude in km
+					double* out_tleage,	// age of TLE in secs since: Jan 1, 2001 00h UTC
+					double* out_latdegs,	// latitude in degs
+					double* out_londegs,	// longitude in degs
+					double* out_altkm,	// altitude in km
+					double* out_azdegs,	// look angle azimuth in degs
+					double* out_eledegs)	// look angle elevation in degs
 {
 	try
 	{
@@ -138,7 +149,15 @@ int orbit_to_lla2(const char* in_tle1,	// TLE (Sat Name)
 		cSatellite satSGP4(tleSGP4);
 
 		// Get the Julian Date for GMT "now"
-		const std::time_t now = std::time(nullptr);
+		// Get the Julian Date for GMT "now"
+		// time '0' is 1970-01-01 00:00:00 UTC, AKA the Unix epoch
+		time_t epoch = 0; 
+		//Create a tm struct from epoch
+    	struct tm epoch_tm = *gmtime(&epoch);
+
+		// Add in_time seconds to epoch_tm to get inputted time in time_t format
+		epoch_tm.tm_sec += in_time;
+		time_t now = mktime(&epoch_tm);
 		cJulian jdNow(now);
 
 		// Get Earth-Centered-Interial position of satellite for time: now

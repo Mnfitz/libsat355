@@ -1,7 +1,9 @@
 #ifndef LIBSAT355_H
 #define LIBSAT355_H
-#include <ctime>
+
 #include <stdio.h>
+#include <time.h>
+
 #include "dllmain.h"
 
 // TRICKY: Make sure only C++ compiles this.
@@ -24,19 +26,21 @@ DLL_EXPORT int HelloWorld();
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data
 DLL_EXPORT int  orbit_to_lla(	
-                    const char* in_tle1,	// TLE (Sat Name)
+                    long long   in_time,	// time in seconds since 1970
+					const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2
+
 					double* out_tleage,		// age of TLE in secs since: Jan 1, 2001 00h UTC
 					double* out_latdegs,	// latitude in degs
 					double* out_londegs,	// longitude in degs
-					double* out_altkm,
-					std::time_t inTime = std::time(nullptr));		// altitude in km
+					double* out_altkm);		// altitude in km
 
 // orbit_to_lla2:
 // Calculate satellite Lat/Lon/Alt plus look-angles
 // for time "now" using input TLE-format orbital data
 DLL_EXPORT int orbit_to_lla2(	
+					long long   in_time,	// time in seconds since 1970
                     const char* in_tle1,	// TLE (Sat Name)
 					const char* in_tle2,	// TLE line 1
 					const char* in_tle3,	// TLE line 2

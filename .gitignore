@@ -15,6 +15,7 @@
 *.dll
 *.lib
 *.exp
+*.exe
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
