@@ -1,0 +1,72 @@
+// launch.json is used to configure a debugger in VSCode.
+// You must fill in the 'program' field with a path to the executable to be debugged.
+// Invoke me via Debug
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Launch/Debug (Windows)", 
+            "type": "cppvsdbg", // Use the microsoft debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
+            "stopAtEntry": false // Set to true to stop program execution at the first line of code
+        },
+
+        {
+            "name": "Build/Launch/Debug (Windows)", 
+            "type": "cppvsdbg", // Use the microsoft debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64",
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            "preLaunchTask": "build", // tasks.json: {"label": "build"}
+        },
+
+        {
+            "name": "Launch/Debug (GDB)", 
+            "type": "cppdbg", // Use GDB or LLDB debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
+            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
+            "windows": {
+                "MIMode": "gdb",
+            },
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "linux": {
+                "MIMode": "gdb",
+            }
+        },
+
+        {
+            "name": "Build/Launch/Debug (GDB)", 
+            "type": "cppdbg", // Use GDB or LLDB debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64",
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            "preLaunchTask": "build", // tasks.json: {"label": "build"}
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
+            "windows": {
+                "MIMode": "gdb",
+            },
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "linux": {
+                "MIMode": "gdb",
+            }
+        }
+    ]
+}
