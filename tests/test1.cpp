@@ -11,16 +11,15 @@ TEST(libsat355, helloworld)
 
 TEST(libsat355, orbit_to_lla)
 {
-    time_t now = time(0);
     time_t epoch = 0; 
-    //Create a tm struct from epoch
-    struct tm now_tm = *localtime(&now);
     struct tm epoch_tm = *gmtime(&epoch);
-
-    now = mktime(&now_tm);
     epoch = mktime(&epoch_tm);
 
-    double seconds = difftime(now, epoch);
+    time_t now = time(0);
+    struct tm now_tm = *localtime(&now);
+    now = mktime(&now_tm);
+
+    long long seconds = static_cast<long long>(difftime(now, epoch));
 
     /*
     ISS (ZARYA)             

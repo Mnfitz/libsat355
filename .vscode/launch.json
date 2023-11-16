@@ -1,73 +1,72 @@
+// launch.json is used to configure a debugger in VSCode.
+// You must fill in the 'program' field with a path to the executable to be debugged.
+// Invoke me via Debug
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        /*
+        
         {
-            
-            "name": "C++ Build/Debug",
-            "type": "cppdbg",
+            "name": "Launch/Debug (Windows)", 
+            "type": "cppvsdbg", // Use the microsoft debugger 
             "request": "launch",
-            "program": "${workspaceFolder}/a.out",
-            "args": [
-                // Add your command line args here
-                // "-X", // argv[1] : First command line arg
-                // "-Y", // argv[2] : Second command line arg
-                // etc...
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
+            "stopAtEntry": false // Set to true to stop program execution at the first line of code
+        },
 
-                // Interperet the last command line arg as optional file for input
-                // Must be the last argument; do not add any args after this!
-                // Change this line to the input file of your choice
-                "${workspaceFolder}/project4/tests/test29.txt" // argv[argc-1] : last command line arg
-            ],
-            "cwd": "${workspaceFolder}",
-            "stopAtEntry": true,
-            "preLaunchTask": "make all", // tasks.json: {"label": "make all"}
+        {
+            "name": "Build/Launch/Debug (Windows)", 
+            "type": "cppvsdbg", // Use the microsoft debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64",
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            "preLaunchTask": "build", // tasks.json: {"label": "build"}
+        },
+
+        {
+            "name": "Launch/Debug (GDB)", 
+            "type": "cppdbg", // Use GDB or LLDB debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
+            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
             "windows": {
                 "MIMode": "gdb",
-                //"miDebuggerPath": "/c/Program Files/mingw64/bin/gdb.exe"
             },
             "osx": {
                 "MIMode": "lldb"
             },
             "linux": {
                 "MIMode": "gdb",
-                //"miDebuggerPath": "/usr/bin/gdb"
             }
         },
-        {
-            "name": "C++ Rebuild/Debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/a.out",
-            "args": [
-                // Add your command line args here
-                // "-X", // argv[1] : First command line arg
-                // "-Y", // argv[2] : Second command line arg
-                // etc...
 
-                // Interperet the last command line arg as optional file for input
-                // Must be the last argument; do not add any args after this!
-                // Change this line to the input file of your choice
-                "${workspaceFolder}/project4/tests/test29.txt" // argv[argc-1] : last command line arg
-            ],
-            "cwd": "${workspaceFolder}",
-            "stopAtEntry": true,
-            "preLaunchTask": "make rebuild", // tasks.json: {"label": "make rebuild"}
+        {
+            "name": "Build/Launch/Debug (GDB)", 
+            "type": "cppdbg", // Use GDB or LLDB debugger 
+            "request": "launch",
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+            "args": [], // No Args
+            "cwd": "${workspaceFolder}/lib/win-x64",
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            "preLaunchTask": "build", // tasks.json: {"label": "build"}
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
             "windows": {
                 "MIMode": "gdb",
-                //"miDebuggerPath": "/c/Program Files/mingw64/bin/gdb.exe"
             },
             "osx": {
                 "MIMode": "lldb"
             },
             "linux": {
                 "MIMode": "gdb",
-                //"miDebuggerPath": "/usr/bin/gdb"
             }
         }
-        */
     ]
 }
