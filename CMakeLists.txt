@@ -1,6 +1,6 @@
 # require at least cmake v3.0.0, so we can use CTest
 cmake_minimum_required(VERSION 3.13)
-enable_testing()
+
 # compile flags: -Wall "enable all compiler warnings"
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall /wd4514 /wd4668 /wd4062 /wd5267 /wd4061 /wd5264 /wd4820 /wd5038 /wd5045 /wd4577")
 # c++ language version level: c++11
@@ -40,6 +40,8 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(src build)
+add_subdirectory(app)
+enable_testing()
 add_subdirectory(tests)
 
 ## cmake compile

@@ -10,6 +10,7 @@
 // "coreLib.h" includes basic types from the core library,
 // such as cSite, cJulian, etc. The header file also contains a
 // "using namespace" statement for Zeptomoby::OrbitTools.
+// C:\Users\mn-fi\Projects\git\libsat355\cppOrbitTools\orbitTools\core\coreLib.h
 #include "orbitTools/core/coreLib.h"
 // "orbitLib.h" includes basic types from the orbit library,
 // including cOrbit.
@@ -46,11 +47,6 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 {
 	try
 	{
-		// Test SGP4 TLE data
-		//in_tle1 = "ISS(ZARYA)";
-		//in_tle2 = "1 25544U 98067A   22321.90676521  .00009613  00000 + 0  17572 - 3 0  9999";
-		//in_tle3 = "2 25544  51.6438 295.0836 0006994  86.3588   5.1970 15.50066990369021";
-
 		// Create a TLE object using the data above
 		cTle tleSGP4(in_tle1, in_tle2, in_tle3);
 
@@ -137,11 +133,6 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 {
 	try
 	{
-		// Test SGP4 TLE data
-		//in_tle1 = "ISS(ZARYA)";
-		//in_tle2 = "1 25544U 98067A   22321.90676521  .00009613  00000 + 0  17572 - 3 0  9999";
-		//in_tle3 = "2 25544  51.6438 295.0836 0006994  86.3588   5.1970 15.50066990369021";
-
 		// Create a TLE object using the data above
 		cTle tleSGP4(in_tle1, in_tle2, in_tle3);
 
