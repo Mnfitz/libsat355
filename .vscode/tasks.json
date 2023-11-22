@@ -13,7 +13,13 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "cmake --build ./build",
+
+            //
+            "windows": { "command": "cmake --build ./build" },
+            "osx": { "command": "cmake -DCMAKE_SYSTEM_NAME=Darwin -S . -B ./build" },
+            //
+
+            //"command": "cmake --build ./build",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -22,7 +28,13 @@
         {
             "label": "regenerate/build",
             "type": "shell",
-            "command": "cmake -S . -B ./build && cmake --build ./build",
+            
+            //
+            "windows": { "command": "cmake -S . -B ./build && cmake --build ./build"},
+            "osx": { "command": "cmake -DCMAKE_SYSTEM_NAME=Darwin -S . -B ./build && cmake --build ./build" },
+            //
+
+            //"command": "cmake -S . -B ./build && cmake --build ./build",
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -31,7 +43,13 @@
         {
             "label": "clean",
             "type": "shell",
-            "command": "cmake --build ./build --target clean",
+            
+            //
+            "windows": { "command": "cmake --build ./build --target clean"},
+            "osx": { "command": "cmake --build ./build --target clean" },
+            //
+
+            //"command": "cmake --build ./build --target clean",
             "group": {
                 "kind": "build",
                 "isDefault": false

@@ -16,7 +16,14 @@ FetchContent_MakeAvailable(gtest)
 add_executable(unit_tests test1.cpp)
 
 # Compile options to silence warnings
-target_compile_options(unit_tests PRIVATE "/EHsc")
+if(WIN32)
+  target_compile_options(unit_tests PRIVATE "/EHsc")
+elseif(APPLE)
+  target_compile_options(unit_tests PRIVATE )
+elseif(IOS)
+  target_compile_options(unit_tests PRIVATE )
+endif()
+
 #add_test(NAME MyTest COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} ctest -R MyTest)
 add_test(NAME unit_tests
     COMMAND ${CMAKE_BINARY_DIR}/../lib/win-x64:unit_tests

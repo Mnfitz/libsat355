@@ -3,18 +3,24 @@ cmake_minimum_required(VERSION 3.13)
 
 # compile flags: -Wall "enable all compiler warnings"
 # CMAKE_CXX_FLAGS is a preexisting magic supervariable that tells the compiler what compile options it should use
-set(CMAKE_SYSTEM_NAME "iOS")
-set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk")
+
+#set(CMAKE_SYSTEM_NAME "APPLE")
 
 if(WIN32)
+    MESSAGE("!!!WINDOWS!!!")
     # Windows-specific compile settings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall /wd4514 /wd4668 /wd4062 /wd5267 /wd4061 /wd5264 /wd4820 /wd5038 /wd5045 /wd4577")
 elseif(APPLE)
+    MESSAGE("!!!MACOS!!!")
     # Mac-specific compile settings
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
+    set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+    
 elseif(IOS)
+    MESSAGE("!!!IOS!!!")
     # iOS-specific compile settings
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -miphoneos-version-min=8.0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable -miphoneos-version-min=8.0")
+    set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.2.sdk")
 endif()
 
 

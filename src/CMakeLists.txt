@@ -2,12 +2,24 @@
 include_directories(../cppOrbitTools/orbitTools/core)
 include_directories(../cppOrbitTools)
 #  Finds libsat355's cpp files to be used in this build
-file(GLOB SRC_FILES *.cpp ../cppOrbitTools/orbitTools/core/*.cpp ../cppOrbitTools/orbitTools/orbit/*.cpp)
+file(GLOB SRC_FILES libsat355.cpp ../cppOrbitTools/orbitTools/core/*.cpp ../cppOrbitTools/orbitTools/orbit/*.cpp)
 # Set any external #defines (-D MYDEFINE) for libsat355
 set(LIBSAT355_DEFINES DLL_EXPORTS) #Note EXPORTS, plural, meaning use __declspec(dllexport) instead of __declspec(dllimport)
 
 # Define a library called libsat355 using the cpp files found above
-add_library(libsat355 SHARED ${SRC_FILES})
+
+if(WIN32)
+  # Include windows specific dll entrypoint
+  list(APPEND SRC_FILES dllmain.cpp)
+  add_library(libsat355 SHARED ${SRC_FILES})
+elseif(APPLE)
+  add_library(libsat355 SHARED ${SRC_FILES})
+elseif(IOS)
+  add_library(libsat355 STATIC ${SRC_FILES})
+endif()
+
+
+#add_library(libsat355 SHARED ${SRC_FILES})
 # Applying any additional compiler options beyond what is specified in CMAKE_CXX_FLAGS
 target_compile_definitions(libsat355 PUBLIC ${LIBSAT355_DEFINES})
 
