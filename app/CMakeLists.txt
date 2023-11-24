@@ -21,8 +21,6 @@ target_compile_definitions(app355 PRIVATE ${APP355_DEFINES})
 
 # Tell CMake app355 executable requires the libsat355 library to link against
 target_link_libraries(app355 PRIVATE libsat355)
-# Tell cmake how to place the output executable in a tidy place a client can find it
-install(TARGETS app355 DESTINATION build)
 
 # Create a customized structure to hold header files when viewed through the IDE
 # Header files will appear in an IDE folder called "Header Files"

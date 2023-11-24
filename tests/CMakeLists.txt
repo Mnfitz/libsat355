@@ -25,10 +25,21 @@ elseif(IOS)
 endif()
 
 #add_test(NAME MyTest COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} ctest -R MyTest)
+if(WIN32)
 add_test(NAME unit_tests
     COMMAND ${CMAKE_BINARY_DIR}/../lib/win-x64:unit_tests
-    -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests
-    )
+    -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests)
+
+elseif(APPLE)
+add_test(NAME unit_tests
+    COMMAND ${CMAKE_BINARY_DIR}/../lib/macos:unit_tests
+    -E chdir ${CMAKE_BINARY_DIR}/../lib/macos ctest -R unit_tests)
+
+elseif(IOS)
+add_test(NAME unit_tests
+    COMMAND ${CMAKE_BINARY_DIR}/../lib/ios:unit_tests
+    -E chdir ${CMAKE_BINARY_DIR}/../lib/ios ctest -R unit_tests)
+endif()
 
 # Link the unit_test to the library libsat355 and gtest_main
 target_link_libraries(unit_tests
@@ -36,6 +47,7 @@ target_link_libraries(unit_tests
     libsat355
     gtest_main
   )
+
 # automatic discovery of unit tests
 include(GoogleTest)
 gtest_discover_tests(unit_tests

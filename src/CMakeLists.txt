@@ -1,8 +1,5 @@
-# Directories to read from
-include_directories(../cppOrbitTools/orbitTools/core)
-include_directories(../cppOrbitTools)
 #  Finds libsat355's cpp files to be used in this build
-file(GLOB SRC_FILES libsat355.cpp ../cppOrbitTools/orbitTools/core/*.cpp ../cppOrbitTools/orbitTools/orbit/*.cpp)
+file(GLOB SRC_FILES "libsat355.cpp" "../cppOrbitTools/orbitTools/core/*.cpp" "../cppOrbitTools/orbitTools/orbit/*.cpp")
 # Set any external #defines (-D MYDEFINE) for libsat355
 set(LIBSAT355_DEFINES DLL_EXPORTS) #Note EXPORTS, plural, meaning use __declspec(dllexport) instead of __declspec(dllimport)
 
@@ -21,14 +18,13 @@ endif()
 
 #add_library(libsat355 SHARED ${SRC_FILES})
 # Applying any additional compiler options beyond what is specified in CMAKE_CXX_FLAGS
-target_compile_definitions(libsat355 PUBLIC ${LIBSAT355_DEFINES})
+target_compile_definitions(libsat355 PRIVATE ${LIBSAT355_DEFINES})
 
 # Indicate the location to find #include (-I dir) files when compiling source
-target_include_directories(libsat355 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(libsat355 PUBLIC ../cppOrbitTools)
+target_include_directories(libsat355 PRIVATE ../cppOrbitTools ../cppOrbitTools/orbitTools/core ../cppOrbitTools/orbitTools/orbit ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Tell cmake how to place the output executable in a tidy place a client can find it
-install(TARGETS libsat355 DESTINATION build)
+install(TARGETS libsat355 DESTINATION lib)
 
 # Create a customized structure to hold header files when viewed through the IDE
 # Header files will appear in an IDE folder called "Header Files"

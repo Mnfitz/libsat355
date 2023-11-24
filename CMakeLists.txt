@@ -7,18 +7,15 @@ cmake_minimum_required(VERSION 3.13)
 #set(CMAKE_SYSTEM_NAME "APPLE")
 
 if(WIN32)
-    MESSAGE("!!!WINDOWS!!!")
     # Windows-specific compile settings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall /wd4514 /wd4668 /wd4062 /wd5267 /wd4061 /wd5264 /wd4820 /wd5038 /wd5045 /wd4577")
 elseif(APPLE)
-    MESSAGE("!!!MACOS!!!")
     # Mac-specific compile settings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
     set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
     
 elseif(IOS)
-    MESSAGE("!!!IOS!!!")
-    # iOS-specific compile settings
+    # ios-specific compile settings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable -miphoneos-version-min=8.0")
     set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.2.sdk")
 endif()
@@ -37,15 +34,26 @@ math(EXPR platform_bits "${CMAKE_SIZEOF_VOID_P} * 8")
 set(platform_dir ${CMAKE_SYSTEM_NAME}${platform_bits}-${CMAKE_CXX_COMPILER_ID}${CMAKE_CXX_COMPILER_VERSION})
 
 # Set the output directory for each build configuration
-foreach(config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
 
-    foreach(var CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${config} CMAKE_LIBRARY_OUTPUT_DIRECTORY_${config} CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config})
+foreach(config _DEBUG _RELEASE _RELWITHDEBINFO _MINSIZEREL "")
+
+    foreach(var CMAKE_ARCHIVE_OUTPUT_DIRECTORY${config} CMAKE_LIBRARY_OUTPUT_DIRECTORY${config} CMAKE_RUNTIME_OUTPUT_DIRECTORY${config})
         #lib\win10-x86
-        set(${var} "${CMAKE_BINARY_DIR}/../lib/win-x64")
+        if(WIN32)
+            set(${var} "${CMAKE_BINARY_DIR}/../lib/win-x64")
+        elseif(APPLE)
+            set(${var} "${CMAKE_BINARY_DIR}/../lib/macos")
+        elseif(IOS)
+            set(${var} "${CMAKE_BINARY_DIR}/../lib/ios")
+        endif()
         string(TOLOWER "${${var}}" ${var})
+        MESSAGE(${var})
+        MESSAGE(${${var}})
     endforeach()
 
 endforeach()
+
+
 
 # Set the CPACK variables
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -67,8 +75,8 @@ add_subdirectory(app)
 enable_testing()
 add_subdirectory(tests)
 
-## cmake compile
-# cmake -G "Visual Studio 17 2022" -S . -B ./build
+# Tell cmake how to place the output executable in a tidy place a client can find it
+install(TARGETS app355 DESTINATION out/app)
 
-## cmake clean
-# cmake --build ./build/ --target clean
+# Tell cmake how to place the output executable in a tidy place a client can find it
+install(TARGETS unit_tests DESTINATION out/tests)

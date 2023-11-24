@@ -14,7 +14,7 @@
 #include "orbitTools/core/coreLib.h"
 // "orbitLib.h" includes basic types from the orbit library,
 // including cOrbit.
-#include "orbitTools/orbit/orbitLib.h"
+#include "orbitLib.h"
 
 // IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
 const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
