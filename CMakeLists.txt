@@ -26,6 +26,8 @@ set(CMAKE_CXX_STANDARD 11)
 # cmake project name: "libsat"
 project(libsat VERSION 0.1.0)
 
+include_directories(src)
+
 # add CTest capability
 include(CTest)
 

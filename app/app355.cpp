@@ -1,4 +1,4 @@
-#include "../src/libsat355.h"
+#include "libsat355.h"
 
 int main()
 {

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <time.h>
 
-#include "../src/libsat355.h"
+#include "libsat355.h"
 
 TEST(libsat355, helloworld)
 {
