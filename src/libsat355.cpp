@@ -11,7 +11,7 @@
 // such as cSite, cJulian, etc. The header file also contains a
 // "using namespace" statement for Zeptomoby::OrbitTools.
 // C:\Users\mn-fi\Projects\git\libsat355\cppOrbitTools\orbitTools\core\coreLib.h
-#include "orbitTools/core/coreLib.h"
+#include "coreLib.h"
 // "orbitLib.h" includes basic types from the orbit library,
 // including cOrbit.
 #include "orbitLib.h"

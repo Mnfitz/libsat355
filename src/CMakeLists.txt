@@ -11,8 +11,12 @@ if(WIN32)
   add_library(libsat355 SHARED ${SRC_FILES})
 elseif(APPLE)
   add_library(libsat355 SHARED ${SRC_FILES})
+  # TRICKY: Tells compiler to look at cppOrbitTools first, so we can override bogus stdafx.h
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -iquote ${PROJECT_SOURCE_DIR}/cppOrbitTools")
 elseif(IOS)
   add_library(libsat355 STATIC ${SRC_FILES})
+    # TRICKY: Tells compiler to look at cppOrbitTools first, so we can override bogus stdafx.h
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -iquote ${PROJECT_SOURCE_DIR}/cppOrbitTools")
 endif()
 
 
