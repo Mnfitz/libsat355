@@ -26,12 +26,40 @@
             }
         },
         {
+            "label": "build iOS",
+            "type": "shell",
+
+            //
+            "command": "cmake -DCMAKE_SYSTEM_NAME=ios -S . -B ./build",
+            //
+
+            //"command": "cmake --build ./build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "regenerate/build",
             "type": "shell",
             
             //
             "windows": { "command": "cmake -S . -B ./build && cmake --build ./build"},
             "osx": { "command": "cmake -DCMAKE_SYSTEM_NAME=Darwin -S . -B ./build && cmake --build ./build" },
+            //
+
+            //"command": "cmake -S . -B ./build && cmake --build ./build",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "regenerate/build iOS",
+            "type": "shell",
+            
+            //
+            "command": "cmake -DIOS=ON -S . -B ./build && cmake --build ./build",
             //
 
             //"command": "cmake -S . -B ./build && cmake --build ./build",

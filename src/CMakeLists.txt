@@ -9,19 +9,20 @@ if(WIN32)
   # Include windows specific dll entrypoint
   list(APPEND SRC_FILES dllmain.cpp)
   add_library(libsat355 SHARED ${SRC_FILES})
-else()
-  if(APPLE)
-    add_library(libsat355 SHARED ${SRC_FILES})
-  elseif(IOS)
+elseif(APPLE)
+  if(IOS)
     add_library(libsat355 STATIC ${SRC_FILES})
+  else()
+    add_library(libsat355 SHARED ${SRC_FILES})
   endif()
+endif()
 
   #set(PRECOMPILE_HEADERS "../cppOrbitTools/stdafx.h")
   #set(PRECOMPILE_BINARY "stdafx.h.pch")
   #execute_process(COMMAND ${CMAKE_CXX_COMPILER} -x c++-header ${PRECOMPILE_HEADERS} -o ${PRECOMPILE_BINARY})
   #target_precompile_headers(libsat355 REUSE_FROM ${PRECOMPILE_BINARY})
   #target_precompile_headers(libsat355 PRIVATE ${PRECOMPILE_HEADERS})
-endif()
+
 
 # Applying any additional compiler options beyond what is specified in CMAKE_CXX_FLAGS
 target_compile_definitions(libsat355 PRIVATE ${LIBSAT355_DEFINES})

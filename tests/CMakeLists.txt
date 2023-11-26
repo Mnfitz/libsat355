@@ -19,9 +19,11 @@ add_executable(unit_tests test1.cpp)
 if(WIN32)
   target_compile_options(unit_tests PRIVATE "/EHsc")
 elseif(APPLE)
-  target_compile_options(unit_tests PRIVATE )
-elseif(IOS)
-  target_compile_options(unit_tests PRIVATE )
+  if(IOS)
+    target_compile_options(unit_tests PRIVATE )
+  else()
+    target_compile_options(unit_tests PRIVATE )
+  endif()
 endif()
 
 #add_test(NAME MyTest COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} ctest -R MyTest)
@@ -31,14 +33,15 @@ add_test(NAME unit_tests
     -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests)
 
 elseif(APPLE)
-add_test(NAME unit_tests
-    COMMAND ${CMAKE_BINARY_DIR}/../lib/macos:unit_tests
-    -E chdir ${CMAKE_BINARY_DIR}/../lib/macos ctest -R unit_tests)
-
-elseif(IOS)
-add_test(NAME unit_tests
-    COMMAND ${CMAKE_BINARY_DIR}/../lib/ios:unit_tests
-    -E chdir ${CMAKE_BINARY_DIR}/../lib/ios ctest -R unit_tests)
+  if(IOS)
+    add_test(NAME unit_tests
+        COMMAND ${CMAKE_BINARY_DIR}/../lib/ios:unit_tests
+        -E chdir ${CMAKE_BINARY_DIR}/../lib/ios ctest -R unit_tests)
+  else()
+    add_test(NAME unit_tests
+      COMMAND ${CMAKE_BINARY_DIR}/../lib/macos:unit_tests
+      -E chdir ${CMAKE_BINARY_DIR}/../lib/macos ctest -R unit_tests)
+  endif()
 endif()
 
 # Link the unit_test to the library libsat355 and gtest_main
