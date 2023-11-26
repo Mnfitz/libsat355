@@ -13,27 +13,7 @@
         {
             "label": "build",
             "type": "shell",
-
-            //
-            "windows": { "command": "cmake --build ./build" },
-            "osx": { "command": "cmake -DCMAKE_SYSTEM_NAME=Darwin -S . -B ./build" },
-            //
-
-            //"command": "cmake --build ./build",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        },
-        {
-            "label": "build iOS",
-            "type": "shell",
-
-            //
-            "command": "cmake -DCMAKE_SYSTEM_NAME=ios -S . -B ./build",
-            //
-
-            //"command": "cmake --build ./build",
+            "command": "cmake --build ./build",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -42,13 +22,8 @@
         {
             "label": "regenerate/build",
             "type": "shell",
-            
-            //
             "windows": { "command": "cmake -S . -B ./build && cmake --build ./build"},
-            "osx": { "command": "cmake -DCMAKE_SYSTEM_NAME=Darwin -S . -B ./build && cmake --build ./build" },
-            //
-
-            //"command": "cmake -S . -B ./build && cmake --build ./build",
+            "osx": { "command": "cmake -DIOS=OFF -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_BUILD_TYPE=Debug -S . -B ./build && cmake --build ./build" },
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -57,12 +32,7 @@
         {
             "label": "regenerate/build iOS",
             "type": "shell",
-            
-            //
             "command": "cmake -DIOS=ON -S . -B ./build && cmake --build ./build",
-            //
-
-            //"command": "cmake -S . -B ./build && cmake --build ./build",
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -71,13 +41,7 @@
         {
             "label": "clean",
             "type": "shell",
-            
-            //
-            "windows": { "command": "cmake --build ./build --target clean"},
-            "osx": { "command": "cmake --build ./build --target clean" },
-            //
-
-            //"command": "cmake --build ./build --target clean",
+            "command": "cmake --build ./build --target clean",
             "group": {
                 "kind": "build",
                 "isDefault": false
