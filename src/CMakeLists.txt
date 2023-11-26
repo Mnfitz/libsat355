@@ -9,24 +9,27 @@ if(WIN32)
   # Include windows specific dll entrypoint
   list(APPEND SRC_FILES dllmain.cpp)
   add_library(libsat355 SHARED ${SRC_FILES})
-elseif(APPLE)
-  add_library(libsat355 SHARED ${SRC_FILES})
-  # TRICKY: Tells compiler to look at cppOrbitTools first, so we can override bogus stdafx.h
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -iquote ${PROJECT_SOURCE_DIR}/cppOrbitTools")
-elseif(IOS)
-  add_library(libsat355 STATIC ${SRC_FILES})
-    # TRICKY: Tells compiler to look at cppOrbitTools first, so we can override bogus stdafx.h
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -iquote ${PROJECT_SOURCE_DIR}/cppOrbitTools")
+else()
+  if(APPLE)
+    add_library(libsat355 SHARED ${SRC_FILES})
+  elseif(IOS)
+    add_library(libsat355 STATIC ${SRC_FILES})
+  endif()
+
+  #set(PRECOMPILE_HEADERS "../cppOrbitTools/stdafx.h")
+  #set(PRECOMPILE_BINARY "stdafx.h.pch")
+  #execute_process(COMMAND ${CMAKE_CXX_COMPILER} -x c++-header ${PRECOMPILE_HEADERS} -o ${PRECOMPILE_BINARY})
+  #target_precompile_headers(libsat355 REUSE_FROM ${PRECOMPILE_BINARY})
+  #target_precompile_headers(libsat355 PRIVATE ${PRECOMPILE_HEADERS})
 endif()
 
-
-#add_library(libsat355 SHARED ${SRC_FILES})
 # Applying any additional compiler options beyond what is specified in CMAKE_CXX_FLAGS
 target_compile_definitions(libsat355 PRIVATE ${LIBSAT355_DEFINES})
 
 # Indicate the location to find #include (-I dir) files when compiling source
 # TRICKY: We must place this include path first to override bogus headers in the zeptomoby code
 target_include_directories(libsat355 BEFORE PRIVATE ../cppOrbitTools)
+target_include_directories(libsat355 AFTER PRIVATE ../cppOrbitTools/overrides/core ../cppOrbitTools/overrides/orbit)
 target_include_directories(libsat355 AFTER PRIVATE ../cppOrbitTools/orbitTools/core ../cppOrbitTools/orbitTools/orbit ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Tell cmake how to place the output executable in a tidy place a client can find it

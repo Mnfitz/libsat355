@@ -58,7 +58,7 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 		time_t epoch = 0; 
 		//Create a tm struct from epoch
     	struct tm epoch_tm{};
-		(void) gmtime_s(&epoch_tm, &epoch);
+		(void) gmtime_r(&epoch ,&epoch_tm);
 
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
 		epoch_tm.tm_sec += in_time;
@@ -146,7 +146,7 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 		time_t epoch = 0; 
 		//Create a tm struct from epoch
     	struct tm epoch_tm{};
-		(void) gmtime_s(&epoch_tm, &epoch);
+		(void) gmtime_r(&epoch, &epoch_tm);
 
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
 		epoch_tm.tm_sec += in_time;

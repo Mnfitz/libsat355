@@ -1,5 +1,10 @@
+//
+// stdafx.h
+//
+#pragma once
+
 #if WIN32
-#include "orbitTools/core/stdafx.h"
+#include "orbitTools/orbit/_stdafx.h"
 #else
 #define gmtime_s(x, y) (gmtime_r(y, x))
 #define _get_timezone(x)
@@ -10,6 +15,11 @@
 #include <assert.h>
 #include <math.h>
 #include <time.h>
+
+#include "math.h"
+#include "time.h"
+
+#include "coreLib.h"
 
 #include <string>
 #include <map>
