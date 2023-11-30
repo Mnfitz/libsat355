@@ -9,8 +9,9 @@
             "name": "Launch/Debug (Windows)", 
             "type": "cppvsdbg", // Use the microsoft debugger 
             "request": "launch",
-            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
-            "args": [], // No Args
+
+            "program": "${workspaceFolder}/lib/win-x64/app355",  
+            "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
             "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
             "stopAtEntry": false // Set to true to stop program execution at the first line of code
         },
@@ -19,10 +20,11 @@
             "name": "Build/Launch/Debug (Windows)", 
             "type": "cppvsdbg", // Use the microsoft debugger 
             "request": "launch",
-            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
+
+            "program": "${workspaceFolder}/lib/win-x64/unit_tests",
             "args": [], // No Args
             "cwd": "${workspaceFolder}/lib/win-x64",
-            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
             "preLaunchTask": "build", // tasks.json: {"label": "build"}
         },
 
@@ -30,43 +32,62 @@
             "name": "Launch/Debug (GDB)", 
             "type": "cppdbg", // Use GDB or LLDB debugger 
             "request": "launch",
-            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
-            "args": [], // No Args
-            "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
-            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
-            // MIMode indicates to VSCode which debugger should be used.
-            // Can only be gdb or lldb.
+            
             "windows": {
-                "MIMode": "gdb",
+                "program": "${workspaceFolder}/lib/win-x64/app355",  
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
+                "cwd": "${workspaceFolder}/lib/win-x64", 
+                "MIMode": "gdb"
             },
             "osx": {
+                "program": "${workspaceFolder}/lib/macos/app355",  
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
+                "cwd": "${workspaceFolder}/lib/macos",
                 "MIMode": "lldb"
             },
             "linux": {
-                "MIMode": "gdb",
-            }
+                "program": "${workspaceFolder}/lib/ios/unit_tests",  
+                "args": [], 
+                "cwd": "${workspaceFolder}/lib/ios", 
+                "MIMode": "gdb"
+            },
+            
+            //"args": [], // No Args
+            //"cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
         },
 
         {
             "name": "Build/Launch/Debug (GDB)", 
             "type": "cppdbg", // Use GDB or LLDB debugger 
             "request": "launch",
-            "program": "${workspaceFolder}/lib/win-x64/unit_tests.exe",
-            "args": [], // No Args
-            "cwd": "${workspaceFolder}/lib/win-x64",
-            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
-            "preLaunchTask": "build", // tasks.json: {"label": "build"}
-            // MIMode indicates to VSCode which debugger should be used.
-            // Can only be gdb or lldb.
+            
             "windows": {
-                "MIMode": "gdb",
+                "program": "${workspaceFolder}/lib/win-x64/unit_tests",  
+                "args": [], 
+                "cwd": "${workspaceFolder}/lib/win-x64", 
+                "MIMode": "gdb"
             },
             "osx": {
+                "program": "${workspaceFolder}/lib/macos/unit_tests",  
+                "args": [], 
+                "cwd": "${workspaceFolder}/lib/macos",
                 "MIMode": "lldb"
             },
             "linux": {
-                "MIMode": "gdb",
-            }
+                "program": "${workspaceFolder}/lib/ios/unit_tests",  
+                "args": [], 
+                "cwd": "${workspaceFolder}/lib/ios", 
+                "MIMode": "gdb"
+            },
+            //"args": [], // No Args
+            //"cwd": "${workspaceFolder}/lib/win-x64",
+            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
+            "preLaunchTask": "build", // tasks.json: {"label": "build"}
+            // MIMode indicates to VSCode which debugger should be used.
+            // Can only be gdb or lldb.
         }
     ]
 }

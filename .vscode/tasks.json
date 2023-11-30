@@ -22,7 +22,17 @@
         {
             "label": "regenerate/build",
             "type": "shell",
-            "command": "cmake -S . -B ./build && cmake --build ./build",
+            "windows": { "command": "cmake -S . -B ./build && cmake --build ./build"},
+            "osx": { "command": "cmake -DIOS=OFF -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_BUILD_TYPE=Debug -S . -B ./build && cmake --build ./build" },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "regenerate/build iOS",
+            "type": "shell",
+            "command": "cmake -DIOS=ON -S . -B ./build && cmake --build ./build",
             "group": {
                 "kind": "build",
                 "isDefault": false

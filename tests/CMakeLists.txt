@@ -1,5 +1,7 @@
 
+# Allow testing
 enable_testing()
+# Voodoo to fetch googletest from github
 include(FetchContent)
 FetchContent_Declare(gtest
   QUIET
@@ -10,25 +12,45 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(gtest)
 
-add_executable(
-    unit_tests
-    test1.cpp
-    )
+# Define an executable called unit_test using test1.cpp
+add_executable(unit_tests test1.cpp)
 
-target_compile_options(unit_tests PRIVATE "/EHsc")
+# Compile options to silence warnings
+if(WIN32)
+  target_compile_options(unit_tests PRIVATE "/EHsc")
+elseif(APPLE)
+  if(IOS)
+    target_compile_options(unit_tests PRIVATE )
+  else()
+    target_compile_options(unit_tests PRIVATE )
+  endif()
+endif()
+
 #add_test(NAME MyTest COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} ctest -R MyTest)
+if(WIN32)
 add_test(NAME unit_tests
     COMMAND ${CMAKE_BINARY_DIR}/../lib/win-x64:unit_tests
-    -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests
-    )
+    -E chdir ${CMAKE_BINARY_DIR}/../lib/win-x64 ctest -R unit_tests)
 
-MESSAGE(${CMAKE_BINARY_DIR}/../lib/win-x64)
+elseif(APPLE)
+  if(IOS)
+    add_test(NAME unit_tests
+        COMMAND ${CMAKE_BINARY_DIR}/../lib/ios:unit_tests
+        -E chdir ${CMAKE_BINARY_DIR}/../lib/ios ctest -R unit_tests)
+  else()
+    add_test(NAME unit_tests
+      COMMAND ${CMAKE_BINARY_DIR}/../lib/macos:unit_tests
+      -E chdir ${CMAKE_BINARY_DIR}/../lib/macos ctest -R unit_tests)
+  endif()
+endif()
 
+# Link the unit_test to the library libsat355 and gtest_main
 target_link_libraries(unit_tests
   PRIVATE
     libsat355
     gtest_main
   )
+
 # automatic discovery of unit tests
 include(GoogleTest)
 gtest_discover_tests(unit_tests

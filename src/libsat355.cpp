@@ -5,15 +5,22 @@
 
 #include <iostream>
 
+#if (!WIN32)
+#define gmtime_s(x, y) (gmtime_r(y, x))
+#define _get_timezone(x)
+#define _snprintf_s (snprintf)
+#endif // WIN32
+
 // orbittools
 // *NOTE: Large portions of this was stolen from orbittools demo
 // "coreLib.h" includes basic types from the core library,
 // such as cSite, cJulian, etc. The header file also contains a
 // "using namespace" statement for Zeptomoby::OrbitTools.
-#include "orbitTools/core/coreLib.h"
+// C:\Users\mn-fi\Projects\git\libsat355\cppOrbitTools\orbitTools\core\coreLib.h
+#include "coreLib.h"
 // "orbitLib.h" includes basic types from the orbit library,
 // including cOrbit.
-#include "orbitTools/orbit/orbitLib.h"
+#include "orbitLib.h"
 
 // IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
 const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
@@ -46,11 +53,6 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 {
 	try
 	{
-		// Test SGP4 TLE data
-		//in_tle1 = "ISS(ZARYA)";
-		//in_tle2 = "1 25544U 98067A   22321.90676521  .00009613  00000 + 0  17572 - 3 0  9999";
-		//in_tle3 = "2 25544  51.6438 295.0836 0006994  86.3588   5.1970 15.50066990369021";
-
 		// Create a TLE object using the data above
 		cTle tleSGP4(in_tle1, in_tle2, in_tle3);
 
@@ -61,7 +63,9 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 		// time '0' is 1970-01-01 00:00:00 UTC, AKA the Unix epoch
 		time_t epoch = 0; 
 		//Create a tm struct from epoch
-    	struct tm epoch_tm = *gmtime(&epoch);
+    	struct tm epoch_tm{};
+
+		(void) gmtime_s(&epoch_tm, &epoch);
 
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
 		epoch_tm.tm_sec += in_time;
@@ -137,11 +141,6 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 {
 	try
 	{
-		// Test SGP4 TLE data
-		//in_tle1 = "ISS(ZARYA)";
-		//in_tle2 = "1 25544U 98067A   22321.90676521  .00009613  00000 + 0  17572 - 3 0  9999";
-		//in_tle3 = "2 25544  51.6438 295.0836 0006994  86.3588   5.1970 15.50066990369021";
-
 		// Create a TLE object using the data above
 		cTle tleSGP4(in_tle1, in_tle2, in_tle3);
 
@@ -153,8 +152,10 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 		// time '0' is 1970-01-01 00:00:00 UTC, AKA the Unix epoch
 		time_t epoch = 0; 
 		//Create a tm struct from epoch
-    	struct tm epoch_tm = *gmtime(&epoch);
+    	struct tm epoch_tm{};
 
+		(void) gmtime_s(&epoch_tm, &epoch);
+		
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
 		epoch_tm.tm_sec += in_time;
 		time_t now = mktime(&epoch_tm);
