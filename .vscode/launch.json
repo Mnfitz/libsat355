@@ -10,8 +10,8 @@
             "type": "cppvsdbg", // Use the microsoft debugger 
             "request": "launch",
 
-            "program": "${workspaceFolder}/lib/win-x64/unit_tests",
-            "args": [], // No Args            
+            "program": "${workspaceFolder}/lib/win-x64/app355",  
+            "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
             "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
             "stopAtEntry": false // Set to true to stop program execution at the first line of code
         },
@@ -34,8 +34,8 @@
             "request": "launch",
             
             "windows": {
-                "program": "${workspaceFolder}/lib/win-x64/unit_tests",  
-                "args": [], 
+                "program": "${workspaceFolder}/lib/win-x64/app355",  
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
                 "cwd": "${workspaceFolder}/lib/win-x64", 
                 "MIMode": "gdb"
             },
