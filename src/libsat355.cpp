@@ -11,6 +11,13 @@
 #define _snprintf_s (snprintf)
 #endif // WIN32
 
+struct TLE
+{
+	std::string name;
+	std::string line1;
+	std::string line2;
+};
+
 // orbittools
 // *NOTE: Large portions of this was stolen from orbittools demo
 // "coreLib.h" includes basic types from the core library,
@@ -28,6 +35,11 @@ const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h
 // TRICKY: extern "C"- Make functions callable from SwiftUI.
 // Force orbit_to_lla() to be "C" rather than "C++" function.
 // Needed because SwiftUI binding header can only call into "C".
+
+DLL_EXPORT int HelloWorld2(int /*val1*/, double /*val2*/)
+{
+	return 0;
+}
 
 extern "C" {
 
@@ -68,7 +80,16 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 		(void) gmtime_s(&epoch_tm, &epoch);
 
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
-		epoch_tm.tm_sec += in_time;
+		
+		constexpr auto kSecInHour = 3600;
+		
+		const auto hours = in_time / kSecInHour;
+		const auto seconds = in_time - (hours * kSecInHour);
+		epoch_tm.tm_hour += static_cast<int>(hours);
+		epoch_tm.tm_sec += static_cast<int>(seconds);
+		
+		//epoch_tm.tm_sec += (in_time);
+
 		time_t now = mktime(&epoch_tm);
 
 		//const std::time_t now = std::time(nullptr);
@@ -157,7 +178,11 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 		(void) gmtime_s(&epoch_tm, &epoch);
 		
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
-		epoch_tm.tm_sec += in_time;
+		constexpr auto kSecInHour = 3600;
+		const auto hours = in_time / kSecInHour;
+		const auto seconds = in_time - (hours * kSecInHour);
+		epoch_tm.tm_hour += static_cast<int>(hours);
+		epoch_tm.tm_sec += static_cast<int>(seconds);
 		time_t now = mktime(&epoch_tm);
 		cJulian jdNow(now);
 
@@ -224,5 +249,122 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 		return kInternalError;
     }
 }
+
+// TLE Helper functions
+int TLE_Make(TLE** outTLE)
+try
+{
+	*outTLE = new TLE();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Make
+
+
+int TLE_Delete(TLE* inTLE)
+try
+{
+	delete inTLE;
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Delete
+
+// TLE Name
+int TLE_GetName(const TLE* inTLE, const char* outName[])
+try
+{
+	*outName = inTLE->name.c_str();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetName
+
+int TLE_SetName(TLE* ioTLE, const char inName[])
+try
+{
+	ioTLE->name = inName;
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_SetName
+
+// TLE Line1
+int TLE_GetLine1(const TLE* inTLE, const char* outLine1[])
+try
+{
+	*outLine1 = inTLE->line1.c_str();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine1
+
+int TLE_SetLine1(TLE* ioTLE, const char inLine1[])
+try
+{
+	ioTLE->line1 = inLine1;
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_SetLine1
+
+// TLE Line2
+int TLE_GetLine2(const TLE* inTLE, const char* outLine2[])
+try
+{
+	*outLine2 = inTLE->line2.c_str();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine2
+
+int TLE_SetLine2(TLE* ioTLE, const char inLine2[])
+try
+{
+	ioTLE->line2 = inLine2;
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_SetLine2
 
 } // extern "C"

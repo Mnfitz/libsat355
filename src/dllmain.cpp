@@ -11,9 +11,9 @@ so this is the exception where BOOL is fine, because your Mac version will have 
 source file that is used for it's "shared object (.so, instead of .dll)" entry point.
 */
 
-BOOL APIENTRY DllMain( HMODULE inModule,
+BOOL APIENTRY DllMain( HMODULE /*inModule*/,
                        DWORD  inCall,
-                       LPVOID inReserved)
+                       LPVOID /*inReserved*/)
 {
     switch (inCall)
     {

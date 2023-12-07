@@ -7,52 +7,64 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
+#include <list>
+#include <tuple>
+#include <cmath>
 
-class TLE
+class OrbitalData
 {
-public:
-    TLE(std::string line1, std::string line2, std::string line3) : 
-        mLine1(line1),
-        mLine2(line2),
-        mLine3(line3)
-    {
-        // Do nothing
-    }
-    
-    TLE() = default;
-
-    std::string getLine1() const 
-    { 
-        return mLine1; 
-    }
-    void setLine1(std::string line1) 
-    { 
-        mLine1 = line1; 
-    }
-
-    std::string getLine2() const 
-    { 
-        return mLine2; 
-    }
-    void setLine2(std::string line2) 
-    { 
-        mLine2 = line2; 
-    }
-
-    std::string getLine3() const 
-    { 
-        return mLine3;
-    }
-    void setLine3(std::string line3) 
-    { 
-        mLine3 = line3; 
-    }
-
 private:
-    std::string mLine1;
-    std::string mLine2;
-    std::string mLine3;
+    std::string mName;
+    double mLatitude;
+    double mLongitude;
+    double mAltitude;
+
+public:
+    OrbitalData(std::string name, double latitude, double longitude, double altitude)
+        : mName(name), mLatitude(latitude), mLongitude(longitude), mAltitude(altitude)
+    {
+        // Nothing to do here
+    }
+
+    OrbitalData() = default;
+
+    ~OrbitalData() = default;
+
+    std::string GetName() const 
+    { 
+        return mName; 
+    }
+    void SetName(std::string name) 
+    { 
+        mName = name; 
+    }
+
+    double GetLatitude() const 
+    { 
+        return mLatitude; 
+    }
+    void SetLatitude(double latitude) 
+    { 
+        mLatitude = latitude; 
+    }
+
+    double GetLongitude() const 
+    { 
+        return mLongitude; 
+    }
+    void SetLongitude(double longitude) 
+    { 
+        mLongitude = longitude; 
+    }
+
+    double GetAltitude() const 
+    { 
+        return mAltitude; 
+    }
+    void SetAltitude(double altitude) 
+    { 
+        mAltitude = altitude; 
+    }
 };
 
 
@@ -88,31 +100,69 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::vector<TLE> tleVector;
-    std::string line;
-    int lineCount = 0;
-    while (std::getline(fileStream, line)) 
-    {
-        TLE newTLE{};
-        lineCount++;
+    std::list<std::tuple<double, OrbitalData>> orbitMap;
+    std::string readLine;
 
-        if ((lineCount % 3) == 1)
+    std::string name = "";
+    std::string line1 = "";
+    std::string line2 = "";
+    double meanMotion = 0.0;
+
+    while(!fileStream.eof())
+    {
+        std::getline(fileStream, name);
+        std::getline(fileStream, line1);
+        std::getline(fileStream, line2);
+
+        std::size_t pos = line2.find_last_of(" ");
+        meanMotion = std::stod(line2.substr(pos + 1));
+
+        double out_tleage = 0.0;
+        double out_latdegs = 0.0;
+        double out_londegs = 0.0;
+        double out_altkm = 0.0;
+
+        // Update TLE list with web address
+        // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
+        // get current time as a long long in seconds
+        long long testTime = time(NULL);
+
+        int result = orbit_to_lla(testTime, name.c_str(), line1.c_str(), line2.c_str(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
+        if (result == 0)
         {
-            newTLE.setLine1(line);
-        }
-        else if ((lineCount % 3) == 2)
-        {
-            newTLE.setLine2(line);
-        }
-        else if ((lineCount % 3) == 0)
-        {
-            newTLE.setLine3(line);
-            tleVector.push_back(newTLE);
+            OrbitalData data(name, out_latdegs, out_londegs, out_altkm);
+            orbitMap.push_back(std::make_pair(meanMotion, data));
         }
     }
-    
-    std::cout << "TLE Count: " << tleVector.size() << std::endl;
+    // Sort by mean motion
+    orbitMap.sort([](const std::tuple<double, OrbitalData>& a, const std::tuple<double, OrbitalData>& b) -> bool
+    {
+        return std::get<0>(a) < std::get<0>(b);
+    });
 
+    // Print out the sorted list
+    // remember the previous mean motion
+    double prevMeanMotion = 0;
+    int count = 0;
+    for (auto& data : orbitMap)
+    {
+        std::cout << std::get<1>(data).GetName() << ": " << std::get<0>(data) << std::endl;
+        std::cout << "Lat: " << std::get<1>(data).GetLatitude() << std::endl;
+        std::cout << "Lon: " << std::get<1>(data).GetLongitude() << std::endl;
+        std::cout << "Alt: " << std::get<1>(data).GetAltitude() << std::endl; 
+
+        // A gap exists
+        
+        double diff = abs(std::get<0>(data) - prevMeanMotion);
+        if (diff > 10)
+        {
+            std::cout << "-----GAP-----" << std::endl;
+            std::cout << "Count: " << count << std::endl;
+            count = 0;
+        }
+        prevMeanMotion = std::get<0>(data);
+        count++;
+    }
 
     return 0;
 }
