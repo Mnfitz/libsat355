@@ -14,29 +14,28 @@
 class OrbitalData
 {
 private:
-    std::string mName;
+    sat355::TLE mTLE;
     double mLatitude;
     double mLongitude;
     double mAltitude;
+    std::string mName;
+    double mMeanMotion;
 
 public:
-    OrbitalData(std::string name, double latitude, double longitude, double altitude)
-        : mName(name), mLatitude(latitude), mLongitude(longitude), mAltitude(altitude)
+    OrbitalData(sat355::TLE inTLE, double latitude, double longitude, double altitude)
+        : mTLE{std::move(inTLE)}, mLatitude(latitude), mLongitude(longitude), mAltitude(altitude)
     {
-        // Nothing to do here
+        mName = mTLE.GetName();
+        mMeanMotion = mTLE.GetMeanMotion();
     }
 
-    OrbitalData() = default;
+    OrbitalData() = delete;
 
     ~OrbitalData() = default;
 
-    std::string GetName() const 
+    const sat355::TLE& GetTLE() const 
     { 
-        return mName; 
-    }
-    void SetName(std::string name) 
-    { 
-        mName = name; 
+        return mTLE; 
     }
 
     double GetLatitude() const 
@@ -100,23 +99,36 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::list<std::tuple<double, OrbitalData>> orbitMap;
+    std::list<OrbitalData> orbitalList;
     std::string readLine;
 
     std::string name = "";
     std::string line1 = "";
     std::string line2 = "";
-    double meanMotion = 0.0;
-
+    
     while(!fileStream.eof())
     {
         std::getline(fileStream, name);
+        // trim the trailing whitespace
+        /*name.erase(std::find_if(name.rbegin(), name.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), name.end());*/
+
         std::getline(fileStream, line1);
+        // trim the trailing whitespace
+        /*line1.erase(std::find_if(line1.rbegin(), line1.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), line1.end());*/
+
         std::getline(fileStream, line2);
+        // trim the trailing whitespace
+        /*line2.erase(std::find_if(line2.rbegin(), line2.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), line2.end());*/
 
-        std::size_t pos = line2.find_last_of(" ");
-        meanMotion = std::stod(line2.substr(pos + 1));
-
+        // Create a TLE object using the data above
+        sat355::TLE tle{name, line1, line2};
+    
         double out_tleage = 0.0;
         double out_latdegs = 0.0;
         double out_londegs = 0.0;
@@ -130,38 +142,71 @@ int main(int argc, char* argv[])
         int result = orbit_to_lla(testTime, name.c_str(), line1.c_str(), line2.c_str(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
         {
-            OrbitalData data(name, out_latdegs, out_londegs, out_altkm);
-            orbitMap.push_back(std::make_pair(meanMotion, data));
+            // Warning! Cannot use tle anymore as it has been moved!
+            OrbitalData data(std::move(tle), out_latdegs, out_londegs, out_altkm);
+            orbitalList.push_back(std::move(data));
         }
     }
     // Sort by mean motion
-    orbitMap.sort([](const std::tuple<double, OrbitalData>& a, const std::tuple<double, OrbitalData>& b) -> bool
+    orbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
-        return std::get<0>(a) < std::get<0>(b);
+        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
     });
 
     // Print out the sorted list
     // remember the previous mean motion
-    double prevMeanMotion = 0;
-    int count = 0;
-    for (auto& data : orbitMap)
-    {
-        std::cout << std::get<1>(data).GetName() << ": " << std::get<0>(data) << std::endl;
-        std::cout << "Lat: " << std::get<1>(data).GetLatitude() << std::endl;
-        std::cout << "Lon: " << std::get<1>(data).GetLongitude() << std::endl;
-        std::cout << "Alt: " << std::get<1>(data).GetAltitude() << std::endl; 
 
-        // A gap exists
-        
-        double diff = abs(std::get<0>(data) - prevMeanMotion);
-        if (diff > 10)
+    std::list<std::list<OrbitalData>> trainList;
+    std::list<OrbitalData> newTrain;
+
+    double prevMeanMotion = 0;
+    double prevInclination = 0;
+    for (auto& data : orbitalList)
+    {
+        double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
+        double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
+        if ((deltaMotion > 0.0001 || deltaInclination > 0.0001) && !newTrain.empty())
         {
-            std::cout << "-----GAP-----" << std::endl;
-            std::cout << "Count: " << count << std::endl;
-            count = 0;
+            // Sort by longitude
+            newTrain.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+            {
+                return inLHS.GetLongitude() < inRHS.GetLongitude();
+            });
+
+            // Filter out wandering satellites
+            if (newTrain.size() > 2)
+            {
+                trainList.push_back(std::move(newTrain));
+            }
+            
+            newTrain.clear();
         }
-        prevMeanMotion = std::get<0>(data);
-        count++;
+        prevMeanMotion = data.GetTLE().GetMeanMotion();
+        prevInclination = data.GetTLE().GetInclination();
+
+        newTrain.push_back(data);
+    }
+    if (!newTrain.empty() && newTrain.size() > 2)
+    {
+        trainList.push_back(newTrain);
+    }
+
+    int trainCount = 0;
+    // Print the contents of the train list
+    for (auto& train : trainList)
+    {
+        std::cout << "   TRAIN #" << trainCount << std::endl;
+        std::cout << "   COUNT: " << train.size() << std::endl;
+        for (auto& data : train)
+        {
+            // Print the name, mean motion, latitude, longitude, and altitude
+            std::cout << data.GetTLE().GetName() << ": " << data.GetTLE().GetMeanMotion() << std::endl;
+            std::cout << "Lat: " << data.GetLatitude() << std::endl;
+            std::cout << "Lon: " << data.GetLongitude() << std::endl;
+            std::cout << "Alt: " << data.GetAltitude() << std::endl << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+        trainCount++;
     }
 
     return 0;

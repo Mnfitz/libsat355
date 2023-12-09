@@ -11,7 +11,7 @@
             "request": "launch",
 
             "program": "${workspaceFolder}/lib/win-x64/app355",  
-            "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"], 
+            "args": ["${workspaceFolder}/tests/StarLinkTLE.txt"], 
             "cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
             "stopAtEntry": true // Set to true to stop program execution at the first line of code
         },

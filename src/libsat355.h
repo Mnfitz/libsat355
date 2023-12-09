@@ -62,25 +62,22 @@ DLL_EXPORT int orbit_to_lla2(
 					double* out_eledegs);	// look angle elevation in degs
 
 // TLE helper functions
+// Use this API from program written in C
 struct TLE;
 typedef struct TLE TLE;
 
-int TLE_Make(TLE** outTLE);
-
-int TLE_Delete(TLE* inTLE);
-
-int TLE_GetName(const TLE* inTLE, const char* outName[]);
-int TLE_SetName(TLE* ioTLE, const char inName[]);
-
-int TLE_GetLine1(const TLE* inTLE, const char* outLine1[]);
-int TLE_SetLine1(TLE* ioTLE, const char inLine1[]);
-
-int TLE_GetLine2(const TLE* inTLE, const char* outLine2[]);
-int TLE_SetLine2(TLE* ioTLE, const char inLine2[]);
+DLL_EXPORT int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE);
+DLL_EXPORT int TLE_Delete(TLE* ioTLE);
+DLL_EXPORT int TLE_GetName(const TLE* inTLE, const char* outName[]);
+DLL_EXPORT int TLE_GetLine1(const TLE* inTLE, const char* outLine1[]);
+DLL_EXPORT int TLE_GetLine2(const TLE* inTLE, const char* outLine2[]);
+DLL_EXPORT int TLE_GetMeanMotion(const TLE* inTLE, double* outMeanMotion);
+DLL_EXPORT int TLE_GetInclination(const TLE* inTLE, double* outInclination);
 
 #ifdef __cplusplus
 } // extern "C"
 
+// Use this API from programs written in C++
 namespace sat355 {
 
 class exception : public std::runtime_error
@@ -93,21 +90,13 @@ public:
 class TLE
 {
 public:
-	TLE()
+	TLE(const std::string& inName, const std::string& inLine1, const std::string& inLine2) 
 	{
-		const int errCode = TLE_Make(&mTLE);
+		int errCode = TLE_Make(inName.c_str(), inLine1.c_str(), inLine2.c_str(), &mTLE);
 		if (errCode != kOK)
 		{
 			throw exception("TLE_Make failed");
 		}
-	}
-
-	TLE(const std::string& inName, const std::string& inLine1, const std::string& inLine2) : 
-		TLE{} // Delegate to default constructor
-	{
-		SetName(inName);
-		SetLine1(inLine1);
-		SetLine2(inLine2);
 	}
 
 	~TLE()
@@ -121,6 +110,48 @@ public:
 		}
 	}
 
+	// TLE Copy Ctor
+	TLE(const TLE& inCopy)
+	{
+		int errCode = TLE_Make(inCopy.GetName().data(), inCopy.GetLine1().data(), inCopy.GetLine2().data(), &mTLE);
+		if (errCode != kOK)
+		{
+			throw exception("TLE_Make failed");
+		}
+	}
+
+	// TLE Copy Assignment
+	TLE& operator=(const TLE& inCopy)
+	{
+		if (this != &inCopy)
+		{
+			int errCode = TLE_Make(inCopy.GetName().data(), inCopy.GetLine1().data(), inCopy.GetLine2().data(), &mTLE);
+			if (errCode != kOK)
+			{
+				throw exception("TLE_Make failed");
+			}
+		}
+		return *this;
+	}
+
+	// TLE Move Ctor
+	TLE(TLE&& ioMove) noexcept
+	{
+		mTLE = ioMove.mTLE;
+		ioMove.mTLE = nullptr;
+	}
+
+	// TLE Move Assignment
+	TLE& operator=(TLE&& ioMove) noexcept
+	{
+		if (this != &ioMove)
+		{
+			mTLE = ioMove.mTLE;
+			ioMove.mTLE = nullptr;
+		}
+		return *this;
+	}
+
 	std::string_view GetName() const
 	{
 		const char* name = nullptr;
@@ -130,15 +161,6 @@ public:
 			throw exception("GetName failed");
 		}
 		return std::string_view(name);
-	}
-	void SetName(const std::string& inName)
-	{
-		const char* name = inName.c_str();
-		int errCode = TLE_SetName(mTLE, name);
-		if (errCode != kOK)
-		{
-			throw exception("SetName failed");
-		}
 	}
 
 	std::string_view GetLine1() const
@@ -151,15 +173,6 @@ public:
 		}
 		return std::string_view(line1);
 	}
-	void SetLine1(const std::string& inLine1)
-	{
-		const char* line1 = inLine1.c_str();
-		int errCode = TLE_SetLine1(mTLE, line1);
-		if (errCode != kOK)
-		{
-			throw exception("SetLine1 failed");
-		}
-	}
 
 	std::string_view GetLine2() const
 	{
@@ -171,17 +184,31 @@ public:
 		}
 		return std::string_view(line2);
 	}
-	void SetLine2(const std::string& inLine2)
+
+	double GetMeanMotion() const
 	{
-		const char* line2 = inLine2.c_str();
-		int errCode = TLE_SetLine2(mTLE, line2);
+		double meanMotion = 0.0;
+		int errCode = TLE_GetMeanMotion(mTLE, &meanMotion);
 		if (errCode != kOK)
 		{
-			throw exception("SetLine2 failed");
+			throw exception("GetMeanMotion failed");
 		}
+		return meanMotion;
+	}
+
+	double GetInclination() const
+	{
+		double inclination = 0.0;
+		int errCode = TLE_GetInclination(mTLE, &inclination);
+		if (errCode != kOK)
+		{
+			throw exception("GetInclination failed");
+		}
+		return inclination;
 	}
 
 private:
+	// Tricky: :: refers to root namespace
 	::TLE* mTLE{nullptr};
 };
 

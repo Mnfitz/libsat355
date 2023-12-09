@@ -11,13 +11,6 @@
 #define _snprintf_s (snprintf)
 #endif // WIN32
 
-struct TLE
-{
-	std::string name;
-	std::string line1;
-	std::string line2;
-};
-
 // orbittools
 // *NOTE: Large portions of this was stolen from orbittools demo
 // "coreLib.h" includes basic types from the core library,
@@ -29,6 +22,22 @@ struct TLE
 // including cOrbit.
 #include "orbitLib.h"
 
+struct TLE
+{
+	std::string mName{};
+	std::string mLine1{};
+	std::string mLine2{};
+	Zeptomoby::OrbitTools::cTle mTLE;
+
+	TLE(const char* inName, const char* inLine1, const char* inLine2) :
+		mTLE{inName, inLine1, inLine2}
+	{
+		mName = std::move(mTLE.Name());
+		mLine1 = std::move(mTLE.Line1());
+		mLine2 = std::move(mTLE.Line2());
+	}
+};
+
 // IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
 const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
 
@@ -36,7 +45,7 @@ const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h
 // Force orbit_to_lla() to be "C" rather than "C++" function.
 // Needed because SwiftUI binding header can only call into "C".
 
-DLL_EXPORT int HelloWorld2(int /*val1*/, double /*val2*/)
+int HelloWorld2(int /*val1*/, double /*val2*/)
 {
 	return 0;
 }
@@ -251,10 +260,13 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 }
 
 // TLE Helper functions
-int TLE_Make(TLE** outTLE)
+int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE)
 try
 {
-	*outTLE = new TLE();
+	// Look ma, no raw new TLE{}!
+	auto tle = std::make_unique<TLE>(inName, inLine1, inLine2);
+	// return the concrete zeptomoby class as an opaque TLE*
+	*outTLE = tle.release();
 	return kOK;
 }
 catch (...)
@@ -266,10 +278,14 @@ catch (...)
 } // TLE_Make
 
 
-int TLE_Delete(TLE* inTLE)
+int TLE_Delete(TLE* ioTLE)
 try
 {
-	delete inTLE;
+	// Look ma, no raw delete inTLE!
+	std::unique_ptr<TLE> tle{};
+	// delete the concrete zeptomoby class allocated in TLE_Make()
+	tle.reset(ioTLE);
+
 	return kOK;
 }
 catch (...)
@@ -284,7 +300,7 @@ catch (...)
 int TLE_GetName(const TLE* inTLE, const char* outName[])
 try
 {
-	*outName = inTLE->name.c_str();
+	*outName = inTLE->mName.c_str();	
 	return kOK;
 }
 catch (...)
@@ -295,25 +311,11 @@ catch (...)
 	return kInternalError;
 } // TLE_GetName
 
-int TLE_SetName(TLE* ioTLE, const char inName[])
-try
-{
-	ioTLE->name = inName;
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_SetName
-
 // TLE Line1
 int TLE_GetLine1(const TLE* inTLE, const char* outLine1[])
 try
 {
-	*outLine1 = inTLE->line1.c_str();
+	*outLine1 = inTLE->mLine1.c_str();	
 	return kOK;
 }
 catch (...)
@@ -324,25 +326,11 @@ catch (...)
 	return kInternalError;
 } // TLE_GetLine1
 
-int TLE_SetLine1(TLE* ioTLE, const char inLine1[])
-try
-{
-	ioTLE->line1 = inLine1;
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_SetLine1
-
 // TLE Line2
 int TLE_GetLine2(const TLE* inTLE, const char* outLine2[])
 try
 {
-	*outLine2 = inTLE->line2.c_str();
+	*outLine2 = inTLE->mLine2.c_str();	
 	return kOK;
 }
 catch (...)
@@ -353,10 +341,10 @@ catch (...)
 	return kInternalError;
 } // TLE_GetLine2
 
-int TLE_SetLine2(TLE* ioTLE, const char inLine2[])
+int TLE_GetMeanMotion(const TLE* inTLE, double* outMeanMotion)
 try
 {
-	ioTLE->line2 = inLine2;
+	*outMeanMotion = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_MMOTION);
 	return kOK;
 }
 catch (...)
@@ -365,6 +353,20 @@ catch (...)
 	std::cerr << "Unexpected exception encountered.\n";
 
 	return kInternalError;
-} // TLE_SetLine2
+}
+
+int TLE_GetInclination(const TLE* inTLE, double* outInclination)
+try
+{
+	*outInclination = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_I);
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+}
 
 } // extern "C"
