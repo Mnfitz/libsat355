@@ -3,10 +3,31 @@
 
 #include "libsat355.h"
 
-TEST(libsat355, helloworld)
+TEST(libsat355, TLE)
 {
-    int result = HelloWorld();
-     ASSERT_NEAR(result, 0, 1.0e-11);
+    const char* in_tle1 = "ISS(ZARYA)";
+    const char* in_tle2 = "1 25544U 98067A   23320.50172660  .00012336  00000+0  22877-3 0  9990";
+    const char* in_tle3 = "2 25544  51.6432 294.0998 0000823 293.3188 166.8114 15.49366195425413";
+    sat355::TLE tle(in_tle1, in_tle2, in_tle3);
+    ASSERT_EQ(tle.GetName(), in_tle1);
+}
+
+TEST(libsat355, TLE_GetMeanMotion)
+{
+    const char* in_tle1 = "ISS(ZARYA)";
+    const char* in_tle2 = "1 25544U 98067A   23320.50172660  .00012336  00000+0  22877-3 0  9990";
+    const char* in_tle3 = "2 25544  51.6432 294.0998 0000823 293.3188 166.8114 15.49366195425413";
+    sat355::TLE tle(in_tle1, in_tle2, in_tle3);
+    ASSERT_EQ(tle.GetMeanMotion(), 15.49366195425413);
+}
+
+TEST(libsat355, TLE_GetInclination)
+{
+    const char* in_tle1 = "ISS(ZARYA)";
+    const char* in_tle2 = "1 25544U 98067A   23320.50172660  .00012336  00000+0  22877-3 0  9990";
+    const char* in_tle3 = "2 25544  51.6432 294.0998 0000823 293.3188 166.8114 15.49366195425413";
+    sat355::TLE tle(in_tle1, in_tle2, in_tle3);
+    ASSERT_EQ(tle.GetInclination(), 51.6432);
 }
 
 TEST(libsat355, orbit_to_lla)
