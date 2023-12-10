@@ -102,29 +102,15 @@ int main(int argc, char* argv[])
     std::list<OrbitalData> orbitalList;
     std::string readLine;
 
-    std::string name = "";
-    std::string line1 = "";
-    std::string line2 = "";
+    std::string name{};
+    std::string line1{};
+    std::string line2{};
     
     while(!fileStream.eof())
     {
         std::getline(fileStream, name);
-        // trim the trailing whitespace
-        /*name.erase(std::find_if(name.rbegin(), name.rend(), [](int ch) {
-            return !std::isspace(ch);
-        }).base(), name.end());*/
-
         std::getline(fileStream, line1);
-        // trim the trailing whitespace
-        /*line1.erase(std::find_if(line1.rbegin(), line1.rend(), [](int ch) {
-            return !std::isspace(ch);
-        }).base(), line1.end());*/
-
         std::getline(fileStream, line2);
-        // trim the trailing whitespace
-        /*line2.erase(std::find_if(line2.rbegin(), line2.rend(), [](int ch) {
-            return !std::isspace(ch);
-        }).base(), line2.end());*/
 
         // Create a TLE object using the data above
         sat355::TLE tle{name, line1, line2};
