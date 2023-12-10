@@ -7,52 +7,63 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
+#include <list>
+#include <tuple>
+#include <cmath>
 
-class TLE
+class OrbitalData
 {
-public:
-    TLE(std::string line1, std::string line2, std::string line3) : 
-        mLine1(line1),
-        mLine2(line2),
-        mLine3(line3)
-    {
-        // Do nothing
-    }
-    
-    TLE() = default;
-
-    std::string getLine1() const 
-    { 
-        return mLine1; 
-    }
-    void setLine1(std::string line1) 
-    { 
-        mLine1 = line1; 
-    }
-
-    std::string getLine2() const 
-    { 
-        return mLine2; 
-    }
-    void setLine2(std::string line2) 
-    { 
-        mLine2 = line2; 
-    }
-
-    std::string getLine3() const 
-    { 
-        return mLine3;
-    }
-    void setLine3(std::string line3) 
-    { 
-        mLine3 = line3; 
-    }
-
 private:
-    std::string mLine1;
-    std::string mLine2;
-    std::string mLine3;
+    sat355::TLE mTLE;
+    double mLatitude;
+    double mLongitude;
+    double mAltitude;
+    std::string mName;
+    double mMeanMotion;
+
+public:
+    OrbitalData(sat355::TLE inTLE, double latitude, double longitude, double altitude)
+        : mTLE{std::move(inTLE)}, mLatitude(latitude), mLongitude(longitude), mAltitude(altitude)
+    {
+        mName = mTLE.GetName();
+        mMeanMotion = mTLE.GetMeanMotion();
+    }
+
+    OrbitalData() = delete;
+
+    ~OrbitalData() = default;
+
+    const sat355::TLE& GetTLE() const 
+    { 
+        return mTLE; 
+    }
+
+    double GetLatitude() const 
+    { 
+        return mLatitude; 
+    }
+    void SetLatitude(double latitude) 
+    { 
+        mLatitude = latitude; 
+    }
+
+    double GetLongitude() const 
+    { 
+        return mLongitude; 
+    }
+    void SetLongitude(double longitude) 
+    { 
+        mLongitude = longitude; 
+    }
+
+    double GetAltitude() const 
+    { 
+        return mAltitude; 
+    }
+    void SetAltitude(double altitude) 
+    { 
+        mAltitude = altitude; 
+    }
 };
 
 
@@ -88,31 +99,101 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::vector<TLE> tleVector;
-    std::string line;
-    int lineCount = 0;
-    while (std::getline(fileStream, line)) 
-    {
-        TLE newTLE{};
-        lineCount++;
+    std::list<OrbitalData> orbitalList;
+    std::string readLine;
 
-        if ((lineCount % 3) == 1)
+    std::string name{};
+    std::string line1{};
+    std::string line2{};
+    
+    while(!fileStream.eof())
+    {
+        std::getline(fileStream, name);
+        std::getline(fileStream, line1);
+        std::getline(fileStream, line2);
+
+        // Create a TLE object using the data above
+        sat355::TLE tle{name, line1, line2};
+    
+        double out_tleage = 0.0;
+        double out_latdegs = 0.0;
+        double out_londegs = 0.0;
+        double out_altkm = 0.0;
+
+        // Update TLE list with web address
+        // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
+        // get current time as a long long in seconds
+        long long testTime = time(NULL);
+
+        int result = orbit_to_lla(testTime, name.c_str(), line1.c_str(), line2.c_str(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
+        if (result == 0)
         {
-            newTLE.setLine1(line);
-        }
-        else if ((lineCount % 3) == 2)
-        {
-            newTLE.setLine2(line);
-        }
-        else if ((lineCount % 3) == 0)
-        {
-            newTLE.setLine3(line);
-            tleVector.push_back(newTLE);
+            // Warning! Cannot use tle anymore as it has been moved!
+            OrbitalData data(std::move(tle), out_latdegs, out_londegs, out_altkm);
+            orbitalList.push_back(std::move(data));
         }
     }
-    
-    std::cout << "TLE Count: " << tleVector.size() << std::endl;
+    // Sort by mean motion
+    orbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    {
+        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+    });
 
+    // Print out the sorted list
+    // remember the previous mean motion
+
+    std::list<std::list<OrbitalData>> trainList;
+    std::list<OrbitalData> newTrain;
+
+    double prevMeanMotion = 0;
+    double prevInclination = 0;
+    for (auto& data : orbitalList)
+    {
+        double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
+        double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
+        if ((deltaMotion > 0.0001 || deltaInclination > 0.0001) && !newTrain.empty())
+        {
+            // Sort by longitude
+            newTrain.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+            {
+                return inLHS.GetLongitude() < inRHS.GetLongitude();
+            });
+
+            // Filter out wandering satellites
+            if (newTrain.size() > 2)
+            {
+                trainList.push_back(std::move(newTrain));
+            }
+            
+            newTrain.clear();
+        }
+        prevMeanMotion = data.GetTLE().GetMeanMotion();
+        prevInclination = data.GetTLE().GetInclination();
+
+        newTrain.push_back(data);
+    }
+    if (!newTrain.empty() && newTrain.size() > 2)
+    {
+        trainList.push_back(newTrain);
+    }
+
+    int trainCount = 0;
+    // Print the contents of the train list
+    for (auto& train : trainList)
+    {
+        std::cout << "   TRAIN #" << trainCount << std::endl;
+        std::cout << "   COUNT: " << train.size() << std::endl;
+        for (auto& data : train)
+        {
+            // Print the name, mean motion, latitude, longitude, and altitude
+            std::cout << data.GetTLE().GetName() << ": " << data.GetTLE().GetMeanMotion() << std::endl;
+            std::cout << "Lat: " << data.GetLatitude() << std::endl;
+            std::cout << "Lon: " << data.GetLongitude() << std::endl;
+            std::cout << "Alt: " << data.GetAltitude() << std::endl << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+        trainCount++;
+    }
 
     return 0;
 }

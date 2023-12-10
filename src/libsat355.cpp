@@ -22,12 +22,33 @@
 // including cOrbit.
 #include "orbitLib.h"
 
+struct TLE
+{
+	std::string mName{};
+	std::string mLine1{};
+	std::string mLine2{};
+	Zeptomoby::OrbitTools::cTle mTLE;
+
+	TLE(const char* inName, const char* inLine1, const char* inLine2) :
+		mTLE{inName, inLine1, inLine2}
+	{
+		mName = std::move(mTLE.Name());
+		mLine1 = std::move(mTLE.Line1());
+		mLine2 = std::move(mTLE.Line2());
+	}
+};
+
 // IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
 const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
 
 // TRICKY: extern "C"- Make functions callable from SwiftUI.
 // Force orbit_to_lla() to be "C" rather than "C++" function.
 // Needed because SwiftUI binding header can only call into "C".
+
+int HelloWorld2(int /*val1*/, double /*val2*/)
+{
+	return 0;
+}
 
 extern "C" {
 
@@ -68,7 +89,16 @@ int orbit_to_lla(	long long 	in_time,	// time in seconds since 1970
 		(void) gmtime_s(&epoch_tm, &epoch);
 
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
-		epoch_tm.tm_sec += in_time;
+		
+		constexpr auto kSecInHour = 3600;
+		
+		const auto hours = in_time / kSecInHour;
+		const auto seconds = in_time - (hours * kSecInHour);
+		epoch_tm.tm_hour += static_cast<int>(hours);
+		epoch_tm.tm_sec += static_cast<int>(seconds);
+		
+		//epoch_tm.tm_sec += (in_time);
+
 		time_t now = mktime(&epoch_tm);
 
 		//const std::time_t now = std::time(nullptr);
@@ -157,7 +187,11 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 		(void) gmtime_s(&epoch_tm, &epoch);
 		
 		// Add in_time seconds to epoch_tm to get inputted time in time_t format
-		epoch_tm.tm_sec += in_time;
+		constexpr auto kSecInHour = 3600;
+		const auto hours = in_time / kSecInHour;
+		const auto seconds = in_time - (hours * kSecInHour);
+		epoch_tm.tm_hour += static_cast<int>(hours);
+		epoch_tm.tm_sec += static_cast<int>(seconds);
 		time_t now = mktime(&epoch_tm);
 		cJulian jdNow(now);
 
@@ -223,6 +257,116 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 
 		return kInternalError;
     }
+}
+
+// TLE Helper functions
+int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE)
+try
+{
+	// Look ma, no raw new TLE{}!
+	auto tle = std::make_unique<TLE>(inName, inLine1, inLine2);
+	// return the concrete zeptomoby class as an opaque TLE*
+	*outTLE = tle.release();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Make
+
+
+int TLE_Delete(TLE* ioTLE)
+try
+{
+	// Look ma, no raw delete inTLE!
+	std::unique_ptr<TLE> tle{};
+	// delete the concrete zeptomoby class allocated in TLE_Make()
+	tle.reset(ioTLE);
+
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Delete
+
+// TLE Name
+int TLE_GetName(const TLE* inTLE, const char* outName[])
+try
+{
+	*outName = inTLE->mName.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetName
+
+// TLE Line1
+int TLE_GetLine1(const TLE* inTLE, const char* outLine1[])
+try
+{
+	*outLine1 = inTLE->mLine1.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine1
+
+// TLE Line2
+int TLE_GetLine2(const TLE* inTLE, const char* outLine2[])
+try
+{
+	*outLine2 = inTLE->mLine2.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine2
+
+int TLE_GetMeanMotion(const TLE* inTLE, double* outMeanMotion)
+try
+{
+	*outMeanMotion = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_MMOTION);
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+}
+
+int TLE_GetInclination(const TLE* inTLE, double* outInclination)
+try
+{
+	*outInclination = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_I);
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
 }
 
 } // extern "C"

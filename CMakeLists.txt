@@ -12,19 +12,19 @@ if(WIN32)
 elseif(APPLE)
     if(IOS)
         # ios-specific compile settings
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable -miphoneos-version-min=8.0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable -miphoneos-version-min=8.0")
         set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.2.sdk")
         set(CMAKE_OSX_ARCHITECTURES "arm64")
     else()
         # Mac-specific compile settings
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
         set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
     endif()
 endif()
 
 
-# c++ language version level: c++11
-set(CMAKE_CXX_STANDARD 11)
+# c++ language version level: c++17
+set(CMAKE_CXX_STANDARD 17)
 # cmake project name: "libsat"
 project(libsat VERSION 0.1.0)
 
