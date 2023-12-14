@@ -22,6 +22,22 @@
 // including cOrbit.
 #include "orbitLib.h"
 
+// Notes on DLLs: 
+// Must use C ABI
+// When using C++ in a Dll, you must prevent C++ from escaping the DLL boundary. 
+//   Notice all the extern "C" declarations and try catches.
+// The reason for this is that DLLs are fundamentally C based, and there is no industry standard that allows C++ to interoperate between compilers.
+// Raw C++ objects or APIs can't be exposed in the DLL interface because of the C ABI restriction.
+// C++ exceptions in the DLL implementation must be caught, handled, and turned into error codes before they cross the DLL boundary.
+// Any resources allocated by DLL implementation must also be de-allocated by DLL implementation. 
+//   Alllocating memory is done through C++ runtime, but we don't know if the DLL and the application are using the same runtime.
+//   Therefore, allocation and deallocation must be done in the same module, else you risk heap corruption.
+// https://docs.microsoft.com/en-us/cpp/build/walkthrough-creating-and-using-a-dynamic-link-library-cpp?view=msvc-160
+
+// Best Practices:
+// C API using opaque data types
+// The DLL implementation defines concrete data types for the opaque data types that wraps any internal classes.
+
 // IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
 const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
 
