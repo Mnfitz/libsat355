@@ -15,7 +15,6 @@
 // TRICKY: Make sure only C++ compiles this.
 // When compiled from C or SwiftUI, it is excluded
 #ifdef __cplusplus
-DLL_EXPORT int HelloWorld2(int val1, double val2);
 extern "C" {
 #endif
 
@@ -26,8 +25,6 @@ enum ErrorCode
     kInvalidTime,
     kInternalError
 };
-
-DLL_EXPORT int HelloWorld();
 
 // orbit_to_lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using

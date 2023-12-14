@@ -10,18 +10,18 @@ if(WIN32)
     # Windows-specific compile settings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall /wd4514 /wd4668 /wd4062 /wd5267 /wd4061 /wd5264 /wd4820 /wd5038 /wd5045 /wd4577")
 elseif(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -cxx-interoperability-mode=default -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
     if(IOS)
         # ios-specific compile settings
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable -miphoneos-version-min=8.0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=8.0")
         set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.2.sdk")
         set(CMAKE_OSX_ARCHITECTURES "arm64")
     else()
         # Mac-specific compile settings
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
         set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
     endif()
 endif()
-
 
 # c++ language version level: c++17
 set(CMAKE_CXX_STANDARD 17)
@@ -76,17 +76,20 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Include, build, and read Makefiles from all subdirectories
 add_subdirectory(src build)
+
+# Tell cmake how to place the output executable in a tidy place a client can find it
+if(NOT APPLE)
+    add_subdirectory(app-cpp)
+    install(TARGETS app355 DESTINATION out/app-cpp)
+else()
+    add_subdirectory(app-swift)
+    install(TARGETS app355 DESTINATION out/app-swift)
+endif()
+
+# Tell cmake how to place the output executable in a tidy place a client can find it
 if(NOT IOS)
-    add_subdirectory(app)
-    # enable testing
+# enable testing
     enable_testing()
     add_subdirectory(tests)
-
-
-# Tell cmake how to place the output executable in a tidy place a client can find it
-install(TARGETS app355 DESTINATION out/app)
-
-# Tell cmake how to place the output executable in a tidy place a client can find it
-install(TARGETS unit_tests DESTINATION out/tests)
-
+    install(TARGETS unit_tests DESTINATION out/tests)
 endif()
