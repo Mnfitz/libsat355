@@ -13,14 +13,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_STANDARD 17)
 
 # Define an executable called app355 using the cpp files found above
-add_executable(app355 ${APP_FILES})
+add_executable(app355-cpp ${APP_FILES})
 # Indicate the location to find #include (-I dir) files when compiling source
-target_include_directories(app355 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(app355=cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # Applying any additional compiler options beyond what is specified in CMAKE_CXX_FLAGS
-target_compile_definitions(app355 PRIVATE ${APP355_DEFINES})
+target_compile_definitions(app355-cpp PRIVATE ${APP355_DEFINES})
 
 # Tell CMake app355 executable requires the libsat355 library to link against
-target_link_libraries(app355 PRIVATE libsat355)
+target_link_libraries(app355-cpp PRIVATE libsat355)
 
 # Create a customized structure to hold header files when viewed through the IDE
 # Header files will appear in an IDE folder called "Header Files"

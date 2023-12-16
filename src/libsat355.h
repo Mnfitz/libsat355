@@ -26,6 +26,8 @@ enum ErrorCode
     kInternalError
 };
 
+DLL_EXPORT int HelloWorld();
+
 // orbit_to_lla:
 // Calculate satellite Lat/Lon/Alt for time "now" using
 // input TLE-format orbital data

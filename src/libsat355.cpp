@@ -71,6 +71,13 @@ struct TLE //: public Zeptomoby::OrbitTools::cTle // prefer aggregation over inh
 // Needed because SwiftUI binding header can only call into "C".
 extern "C" {
 
+int HelloWorld()
+{
+	std::cout << "Hello World!" << std::endl;
+
+	return kOK;
+}
+
 // TLE Helper functions
 int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE)
 try

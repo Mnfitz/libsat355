@@ -1,0 +1,8 @@
+module libsat355{
+    header "libsat355.h"
+    //header "otherheaders.h"
+
+    requires cplusplus
+
+    export *
+}
