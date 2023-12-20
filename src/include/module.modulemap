@@ -1,6 +1,6 @@
 module libsat355{
     header "libsat355.h"
-    //header "otherheaders.h"
+    header "otherheaders.h"
 
     requires cplusplus
 

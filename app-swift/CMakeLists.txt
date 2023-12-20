@@ -4,8 +4,9 @@ file(GLOB APP_FILES *.swift)
 add_executable(app355-swift ${APP_FILES})
 target_link_libraries(app355-swift PRIVATE libsat355)
 
-target_compile_options(app355-swift PRIVATE -cxx-interoperability-mode=default)
+#target_compile_options(app355-swift PRIVATE -cxx-interoperability-mode=default)
 
+#target_compile_options(app355-swift PRIVATE "SHELL:-cxx-interoperability-mode=default")
 
 
 
