@@ -37,6 +37,8 @@ target_include_directories(libsat355 AFTER PRIVATE ../cppOrbitTools/orbitTools/c
 install(TARGETS libsat355 DESTINATION lib)
 
 if(WIN32)
+  set_target_properties(libsat355 PROPERTIES PDB_NAME libsat355)
+  install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib/libsat355.pdb DESTINATION lib)
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/libsat355.h DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 elseif(APPLE)
   if(IOS)

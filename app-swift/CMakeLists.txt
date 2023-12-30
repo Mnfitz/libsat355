@@ -8,9 +8,7 @@ target_link_libraries(app355-swift PRIVATE libsat355)
 
 #target_compile_options(app355-swift PRIVATE "SHELL:-cxx-interoperability-mode=default")
 
-
-
-
+install(TARGETS app355-swift DESTINATION lib)
 
 ## This is the CMakeLists for the app355 project (the main executable)
 ## app355 is meant to test various satellite tracking techniques

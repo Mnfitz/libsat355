@@ -3,6 +3,8 @@
 #include "app355.h"
 
 // std
+#include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -66,7 +68,6 @@ public:
     }
 };
 
-
 int main(int argc, char* argv[])
 {
     // Read .txt files
@@ -106,15 +107,22 @@ int main(int argc, char* argv[])
     std::string line1{};
     std::string line2{};
     
+    std::vector<sat355::TLE> tleList;
+
     while(!fileStream.eof())
     {
         std::getline(fileStream, name);
         std::getline(fileStream, line1);
         std::getline(fileStream, line2);
 
-        // Create a TLE object using the data above
-        sat355::TLE tle{name, line1, line2};
-    
+       sat355::TLE newTLE{name, line1, line2};
+        tleList.push_back(std::move(newTLE));
+    }
+
+    // measure how long it takes to run the function with std::chrono
+    auto start = std::chrono::high_resolution_clock::now();
+    for(auto& inTLE : tleList)
+    {
         double out_tleage = 0.0;
         double out_latdegs = 0.0;
         double out_londegs = 0.0;
@@ -129,10 +137,15 @@ int main(int argc, char* argv[])
         if (result == 0)
         {
             // Warning! Cannot use tle anymore as it has been moved!
-            OrbitalData data(std::move(tle), out_latdegs, out_londegs, out_altkm);
+            OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
             orbitalList.push_back(std::move(data));
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    // measure time difference in milliseconds
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "Elapsed time: " << elapsed << " milliseconds\n";
+
     // Sort by mean motion
     orbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
