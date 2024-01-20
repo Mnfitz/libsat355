@@ -68,21 +68,13 @@ public:
     }
 };
 
-int main(int argc, char* argv[])
+// Section 1: Read from file
+std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[])
 {
-    // Read .txt files
-    // Get them from commandline argument
-    // Parse them, then create a std::vector of TLEs
-    // Sort by mean motion
-    // For similar MM, see if they are close in distance
-    // Create a vector of 'train' objects which are themselves, vectors
-    // Compare the trains to see if any endpoints actually connect
-    // Coelesce the sub-trains together to create a complete train
-
     if (argc < 2) 
     {
         std::cout << "Please provide a file path." << std::endl;
-        return 1;
+        //return 1;
     }
 
     std::filesystem::path filePath(argv[1]);
@@ -90,14 +82,14 @@ int main(int argc, char* argv[])
     if (!std::filesystem::exists(filePath)) 
     {
         std::cout << "The file " << filePath << " does not exist." << std::endl;
-        return 1;
+        //return 1;
     }
 
     std::ifstream fileStream(filePath);
     if (!fileStream) 
     {
         std::cout << "Failed to open the file " << filePath << std::endl;
-        return 1;
+        //return 1;
     }
 
     std::list<OrbitalData> orbitalList;
@@ -118,9 +110,15 @@ int main(int argc, char* argv[])
        sat355::TLE newTLE{name, line1, line2};
         tleList.push_back(std::move(newTLE));
     }
+    
+    return tleList;
+}
 
-    // measure how long it takes to run the function with std::chrono
-    auto start = std::chrono::high_resolution_clock::now();
+// Section 2: Calculate orbital data
+std::list<OrbitalData> CalculateOrbitalData(std::vector<sat355::TLE> tleList)
+{
+    std::list<OrbitalData> orbitalList;
+
     for(auto& inTLE : tleList)
     {
         double out_tleage = 0.0;
@@ -131,9 +129,11 @@ int main(int argc, char* argv[])
         // Update TLE list with web address
         // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
         // get current time as a long long in seconds
-        long long testTime = time(NULL);
+        
+        //long long testTime = time(nullptr);
+        long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
 
-        int result = orbit_to_lla(testTime, name.c_str(), line1.c_str(), line2.c_str(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
+        int result = orbit_to_lla(testTime, inTLE.GetName().data(), inTLE.GetLine1().data(), inTLE.GetLine2().data(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
         {
             // Warning! Cannot use tle anymore as it has been moved!
@@ -141,20 +141,18 @@ int main(int argc, char* argv[])
             orbitalList.push_back(std::move(data));
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    // measure time difference in milliseconds
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "Elapsed time: " << elapsed << " milliseconds\n";
 
     // Sort by mean motion
     orbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
         return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
     });
+    return orbitalList;
+}
 
-    // Print out the sorted list
-    // remember the previous mean motion
-
+// Section 3: Create Trains
+std::list<std::list<OrbitalData>> CreateTrains(std::list<OrbitalData> orbitalList)
+{
     std::list<std::list<OrbitalData>> trainList;
     std::list<OrbitalData> newTrain;
 
@@ -190,12 +188,19 @@ int main(int argc, char* argv[])
         trainList.push_back(newTrain);
     }
 
+    return trainList;
+}
+
+// Section 4: Print Trains
+void PrintTrains(std::list<std::list<OrbitalData>> trainList)
+{
     int trainCount = 0;
     // Print the contents of the train list
     for (auto& train : trainList)
     {
         std::cout << "   TRAIN #" << trainCount << std::endl;
         std::cout << "   COUNT: " << train.size() << std::endl;
+    
         for (auto& data : train)
         {
             // Print the name, mean motion, latitude, longitude, and altitude
@@ -207,6 +212,41 @@ int main(int argc, char* argv[])
         std::cout << std::endl << std::endl;
         trainCount++;
     }
+}
+
+int main(int argc, char* argv[])
+{
+    // measure total time in milliseconds using chrono 
+    auto startTotal = std::chrono::high_resolution_clock::now();
+
+    // meaure time for each section in milliseconds using chrono
+    auto start1 = std::chrono::high_resolution_clock::now();
+    std::vector<sat355::TLE> tleList{ ReadFromFile(argc, argv) };
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed1 = end1 - start1;
+    std::cout << "Read from file: " << elapsed1.count() << " ms" << std::endl;
+
+    auto start2 = std::chrono::high_resolution_clock::now();
+    std::list<OrbitalData> orbitalList{ CalculateOrbitalData(tleList) };
+    auto end2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
+    std::cout << "Calculate orbital data: " << elapsed2.count() << " ms" << std::endl;
+
+    auto start3 = std::chrono::high_resolution_clock::now();
+    std::list<std::list<OrbitalData>> trainList{ CreateTrains(orbitalList) };
+    auto end3 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed3 = end3 - start3;
+    std::cout << "Create trains: " << elapsed3.count() << " ms" << std::endl;
+
+    auto start4 = std::chrono::high_resolution_clock::now();
+    PrintTrains(trainList);
+    auto end4 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed4 = end4 - start4;
+    std::cout << "Print trains: " << elapsed4.count() << " ms" << std::endl;
+    
+    auto endTotal = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsedTotal = endTotal - startTotal;
+    std::cout << "Total time: " << elapsedTotal.count() << " ms" << std::endl;
 
     return 0;
 }
