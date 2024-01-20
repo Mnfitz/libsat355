@@ -22,7 +22,35 @@
 // including cOrbit.
 #include "orbitLib.h"
 
-struct TLE
+// Notes on DLLs: 
+// Must use C ABI
+// When using C++ in a Dll, you must prevent C++ from escaping the DLL boundary. 
+//   Notice all the extern "C" declarations and try catches.
+// The reason for this is that DLLs are fundamentally C based, and there is no industry standard that allows C++ to interoperate between compilers.
+// Raw C++ objects or APIs can't be exposed in the DLL interface because of the C ABI restriction.
+// C++ exceptions in the DLL implementation must be caught, handled, and turned into error codes before they cross the DLL boundary.
+// Any resources allocated by DLL implementation must also be de-allocated by DLL implementation. 
+//   Alllocating memory is done through C++ runtime, but we don't know if the DLL and the application are using the same runtime.
+//   Therefore, allocation and deallocation must be done in the same module, else you risk heap corruption.
+// https://docs.microsoft.com/en-us/cpp/build/walkthrough-creating-and-using-a-dynamic-link-library-cpp?view=msvc-160
+
+// Best Practices:
+// C API using opaque data types
+// The DLL implementation defines concrete data types for the opaque data types that wraps any internal classes.
+
+// IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
+const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
+
+// struct TLE wraps the concrete zeptomoby class to fix
+// problems with the zeptomoby std::string getters
+// zeptomoby returns its strings as values, instead of const reference
+//
+// Q: Should we prefer to aggregate(has-a) or inherit(is-a) zeptmoby cTle?
+// A: In general, prefer aggregation
+// Why? Aggregation eliminates unwanted dependencies on the wrapped class
+// https://en.wikipedia.org/wiki/Composition_over_inheritance#Benefits
+
+struct TLE //: public Zeptomoby::OrbitTools::cTle // prefer aggregation over inheritance
 {
 	std::string mName{};
 	std::string mLine1{};
@@ -38,18 +66,9 @@ struct TLE
 	}
 };
 
-// IOS Core Foundation: Date::init(timeIntervalSinceReferenceDate: TimeInterval)
-const double EPOCH_JAN1_00H_2001 = 2451910.5; // Jan  1.0 2001 = Jan  1 2001 00h UTC
-
 // TRICKY: extern "C"- Make functions callable from SwiftUI.
 // Force orbit_to_lla() to be "C" rather than "C++" function.
 // Needed because SwiftUI binding header can only call into "C".
-
-int HelloWorld2(int /*val1*/, double /*val2*/)
-{
-	return 0;
-}
-
 extern "C" {
 
 int HelloWorld()
@@ -57,6 +76,116 @@ int HelloWorld()
 	std::cout << "Hello World!" << std::endl;
 
 	return kOK;
+}
+
+// TLE Helper functions
+int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE)
+try
+{
+	// Look ma, no raw new TLE{}!
+	auto tle = std::make_unique<TLE>(inName, inLine1, inLine2);
+	// return the concrete zeptomoby class as an opaque TLE*
+	*outTLE = tle.release();
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Make
+
+
+int TLE_Delete(TLE* ioTLE)
+try
+{
+	// Look ma, no raw delete inTLE!
+	std::unique_ptr<TLE> tle{};
+	// delete the concrete zeptomoby class allocated in TLE_Make()
+	tle.reset(ioTLE);
+
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_Delete
+
+// TLE Name
+int TLE_GetName(const TLE* inTLE, const char* outName[])
+try
+{
+	*outName = inTLE->mName.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetName
+
+// TLE Line1
+int TLE_GetLine1(const TLE* inTLE, const char* outLine1[])
+try
+{
+	*outLine1 = inTLE->mLine1.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine1
+
+// TLE Line2
+int TLE_GetLine2(const TLE* inTLE, const char* outLine2[])
+try
+{
+	*outLine2 = inTLE->mLine2.c_str();	
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+} // TLE_GetLine2
+
+int TLE_GetMeanMotion(const TLE* inTLE, double* outMeanMotion)
+try
+{
+	*outMeanMotion = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_MMOTION);
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
+}
+
+int TLE_GetInclination(const TLE* inTLE, double* outInclination)
+try
+{
+	*outInclination = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_I);
+	return kOK;
+}
+catch (...)
+{
+	// Some unknown excption was thrown
+	std::cerr << "Unexpected exception encountered.\n";
+
+	return kInternalError;
 }
 
 // orbit_to_lla:
@@ -257,116 +386,6 @@ int orbit_to_lla2( 	long long   in_time,	// time in seconds since 1970
 
 		return kInternalError;
     }
-}
-
-// TLE Helper functions
-int TLE_Make(const char* inName, const char* inLine1, const char* inLine2, TLE** outTLE)
-try
-{
-	// Look ma, no raw new TLE{}!
-	auto tle = std::make_unique<TLE>(inName, inLine1, inLine2);
-	// return the concrete zeptomoby class as an opaque TLE*
-	*outTLE = tle.release();
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_Make
-
-
-int TLE_Delete(TLE* ioTLE)
-try
-{
-	// Look ma, no raw delete inTLE!
-	std::unique_ptr<TLE> tle{};
-	// delete the concrete zeptomoby class allocated in TLE_Make()
-	tle.reset(ioTLE);
-
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_Delete
-
-// TLE Name
-int TLE_GetName(const TLE* inTLE, const char* outName[])
-try
-{
-	*outName = inTLE->mName.c_str();	
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_GetName
-
-// TLE Line1
-int TLE_GetLine1(const TLE* inTLE, const char* outLine1[])
-try
-{
-	*outLine1 = inTLE->mLine1.c_str();	
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_GetLine1
-
-// TLE Line2
-int TLE_GetLine2(const TLE* inTLE, const char* outLine2[])
-try
-{
-	*outLine2 = inTLE->mLine2.c_str();	
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-} // TLE_GetLine2
-
-int TLE_GetMeanMotion(const TLE* inTLE, double* outMeanMotion)
-try
-{
-	*outMeanMotion = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_MMOTION);
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
-}
-
-int TLE_GetInclination(const TLE* inTLE, double* outInclination)
-try
-{
-	*outInclination = inTLE->mTLE.GetField(Zeptomoby::OrbitTools::cTle::FLD_I);
-	return kOK;
-}
-catch (...)
-{
-	// Some unknown excption was thrown
-	std::cerr << "Unexpected exception encountered.\n";
-
-	return kInternalError;
 }
 
 } // extern "C"

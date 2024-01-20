@@ -36,6 +36,20 @@ target_include_directories(libsat355 AFTER PRIVATE ../cppOrbitTools/orbitTools/c
 # Tell cmake how to place the output executable in a tidy place a client can find it
 install(TARGETS libsat355 DESTINATION lib)
 
+if(WIN32)
+  set_target_properties(libsat355 PROPERTIES PDB_NAME libsat355)
+  install(FILES ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/lib/libsat355.pdb DESTINATION lib)
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/libsat355.h DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+elseif(APPLE)
+  if(IOS)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/libsat355.h DESTINATION ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+    #file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/module.modulemap DESTINATION ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  else()
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/libsat355.h DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    #file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/module.modulemap DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  endif()
+endif()
+
 # Create a customized structure to hold header files when viewed through the IDE
 # Header files will appear in an IDE folder called "Header Files"
 source_group(
