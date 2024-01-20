@@ -5,13 +5,14 @@
 // std
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <list>
+#include <mutex>
+#include <string>
 #include <tuple>
-#include <cmath>
 
 class OrbitalData
 {
@@ -68,8 +69,103 @@ public:
     }
 };
 
-// Section 1: Read from file
-std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[])
+namespace {
+
+class SatOrbit
+{
+public:
+    SatOrbit(std::size_t inNumThreads = 1);
+    virtual ~SatOrbit() = default;
+
+    std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
+    std::list<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleList);
+    void SortOrbitalList(std::list<OrbitalData>& ioOrbitalList);
+    std::list<std::list<OrbitalData>> CreateTrains(const std::list<OrbitalData>& orbitalList);
+    void PrintTrains(const std::list<std::list<OrbitalData>>& trainList);
+
+private:
+    using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
+    using tle_iterator = std::vector<sat355::TLE>::iterator;
+    using OrbitalDataList = std::tuple<std::mutex, std::list<OrbitalData>>;
+
+private:
+    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
+    virtual void OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataList& ioDataList);
+    virtual void OnSortOrbitalList(std::list<OrbitalData>& ioOrbitalList);
+    virtual std::list<std::list<OrbitalData>> OnCreateTrains(const std::list<OrbitalData>& orbitalList);
+    virtual void OnPrintTrains(const std::list<std::list<OrbitalData>>& trainList);
+
+private:
+    std::size_t mNumThreads{0};
+    OrbitalDataList mOrbitalList{};
+};
+
+// Public Non-Virtuals
+SatOrbit::SatOrbit(std::size_t inNumThreads) : 
+    mNumThreads(inNumThreads)
+{
+    // Do nothing
+}
+
+std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
+{
+    return OnReadFromFile(argc, argv);
+}
+
+std::list<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleList)
+{
+    // create a list of threads the size of the number of threads specified
+    std::vector<std::thread> threadList{mNumThreads};
+    std::size_t tleListSize = tleList.size();
+
+    // calculate the number of TLEs per thread
+    std::size_t tlePerThread = tleListSize / mNumThreads;
+    auto tleBegin = tleList.begin();
+    auto tleEnd = tleList.end();
+
+    // loop through the threads
+    for (std::size_t i = 0; i < mNumThreads; ++i)
+    {
+        // calculate the begin and end of the TLEs for the current thread
+        tleBegin = tleList.begin() + (i * tlePerThread);
+        tleEnd = tleBegin + tlePerThread;
+
+        // if this is the last thread, add the remaining TLEs
+        if (i == mNumThreads - 1)
+        {
+            tleEnd = tleList.end();
+        }
+
+        // start the thread
+        threadList[i] = std::thread(&SatOrbit::OnCalculateOrbitalData, this, tleBegin, tleEnd, std::ref(mOrbitalList));
+    }
+    // wait for the threads to finish before returning
+    std::for_each(threadList.begin(), threadList.end(), [](std::thread& inThread)
+    {
+        inThread.join();
+    });
+
+    //OnCalculateOrbitalData(tleList.begin(), tleList.end(), mOrbitalList);
+    return std::move(std::get<1>(mOrbitalList));
+}
+
+void SatOrbit::SortOrbitalList(std::list<OrbitalData>& ioOrbitalList)
+{
+    OnSortOrbitalList(ioOrbitalList);
+}
+
+std::list<std::list<OrbitalData>> SatOrbit::CreateTrains(const std::list<OrbitalData>& orbitalList)
+{
+    return OnCreateTrains(orbitalList);
+}
+
+void SatOrbit::PrintTrains(const std::list<std::list<OrbitalData>>& trainList)
+{
+    OnPrintTrains(trainList);
+}
+
+// Private Virtuals
+std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
 {
     if (argc < 2) 
     {
@@ -114,12 +210,10 @@ std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[])
     return tleList;
 }
 
-// Section 2: Calculate orbital data
-std::list<OrbitalData> CalculateOrbitalData(std::vector<sat355::TLE> tleList)
+void SatOrbit::OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataList& ioDataList)
 {
-    std::list<OrbitalData> orbitalList;
-
-    for(auto& inTLE : tleList)
+    std::list<OrbitalData> orbitalList{};
+    std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
     {
         double out_tleage = 0.0;
         double out_latdegs = 0.0;
@@ -140,18 +234,26 @@ std::list<OrbitalData> CalculateOrbitalData(std::vector<sat355::TLE> tleList)
             OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
             orbitalList.push_back(std::move(data));
         }
-    }
+    });
 
+    auto& [mutex, outputList] = ioDataList; // C++17 Structured Binding simplifies tuple manipulation
+    // Use mutex to protect access to the list
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        outputList.splice(outputList.end(), std::move(orbitalList));
+    }
+}
+
+void SatOrbit::OnSortOrbitalList(std::list<OrbitalData>& ioOrbitalList)
+{
     // Sort by mean motion
-    orbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    ioOrbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
         return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
     });
-    return orbitalList;
 }
 
-// Section 3: Create Trains
-std::list<std::list<OrbitalData>> CreateTrains(std::list<OrbitalData> orbitalList)
+std::list<std::list<OrbitalData>> SatOrbit::OnCreateTrains(const std::list<OrbitalData>& orbitalList)
 {
     std::list<std::list<OrbitalData>> trainList;
     std::list<OrbitalData> newTrain;
@@ -191,8 +293,7 @@ std::list<std::list<OrbitalData>> CreateTrains(std::list<OrbitalData> orbitalLis
     return trainList;
 }
 
-// Section 4: Print Trains
-void PrintTrains(std::list<std::list<OrbitalData>> trainList)
+void SatOrbit::OnPrintTrains(const std::list<std::list<OrbitalData>>& trainList)
 {
     int trainCount = 0;
     // Print the contents of the train list
@@ -214,35 +315,46 @@ void PrintTrains(std::list<std::list<OrbitalData>> trainList)
     }
 }
 
+} // namespace anonymous
+
 int main(int argc, char* argv[])
 {
     // measure total time in milliseconds using chrono 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
+    // 4 threads
+    SatOrbit satOrbit{4};
+
     // meaure time for each section in milliseconds using chrono
     auto start1 = std::chrono::high_resolution_clock::now();
-    std::vector<sat355::TLE> tleList{ ReadFromFile(argc, argv) };
+    std::vector<sat355::TLE> tleList{ satOrbit.ReadFromFile(argc, argv) };
     auto end1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed1 = end1 - start1;
     std::cout << "Read from file: " << elapsed1.count() << " ms" << std::endl;
 
     auto start2 = std::chrono::high_resolution_clock::now();
-    std::list<OrbitalData> orbitalList{ CalculateOrbitalData(tleList) };
+    std::list<OrbitalData> orbitalList{ satOrbit.CalculateOrbitalData(tleList) };
     auto end2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
     std::cout << "Calculate orbital data: " << elapsed2.count() << " ms" << std::endl;
 
     auto start3 = std::chrono::high_resolution_clock::now();
-    std::list<std::list<OrbitalData>> trainList{ CreateTrains(orbitalList) };
+    satOrbit.SortOrbitalList(orbitalList);
     auto end3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed3 = end3 - start3;
-    std::cout << "Create trains: " << elapsed3.count() << " ms" << std::endl;
+    std::cout << "Sort orbital list: " << elapsed3.count() << " ms" << std::endl;
 
     auto start4 = std::chrono::high_resolution_clock::now();
-    PrintTrains(trainList);
+    std::list<std::list<OrbitalData>> trainList{ satOrbit.CreateTrains(orbitalList) };
     auto end4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed4 = end4 - start4;
-    std::cout << "Print trains: " << elapsed4.count() << " ms" << std::endl;
+    std::cout << "Create trains: " << elapsed4.count() << " ms" << std::endl;
+
+    auto start5 = std::chrono::high_resolution_clock::now();
+    satOrbit.PrintTrains(trainList);
+    auto end5 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed5 = end5 - start5;
+    std::cout << "Print trains: " << elapsed5.count() << " ms" << std::endl;
     
     auto endTotal = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsedTotal = endTotal - startTotal;
