@@ -78,26 +78,31 @@ public:
     virtual ~SatOrbit() = default;
 
     std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
-    std::list<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleList);
-    void SortOrbitalList(std::list<OrbitalData>& ioOrbitalList);
-    std::list<std::list<OrbitalData>> CreateTrains(const std::list<OrbitalData>& orbitalList);
-    void PrintTrains(const std::list<std::list<OrbitalData>>& trainList);
+    std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
+    void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
+    std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
+    void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
 private:
     using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
     using tle_iterator = std::vector<sat355::TLE>::iterator;
-    using OrbitalDataList = std::tuple<std::mutex, std::list<OrbitalData>>;
+    using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
+    using orbit_iterator = std::vector<OrbitalData>::iterator;
+    using orbit_const_iterator = std::vector<OrbitalData>::const_iterator;
 
 private:
     virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
-    virtual void OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataList& ioDataList);
-    virtual void OnSortOrbitalList(std::list<OrbitalData>& ioOrbitalList);
-    virtual std::list<std::list<OrbitalData>> OnCreateTrains(const std::list<OrbitalData>& orbitalList);
-    virtual void OnPrintTrains(const std::list<std::list<OrbitalData>>& trainList);
+    //virtual void OnCalculateOrbitalData(, OrbitalDataVector& ioDataVector);
+    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
+    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
+    virtual void OnSortOrbitalVectorMulti(std::vector<OrbitalData> ioOrbitalVector, std::mutex& ioMutex);
+    virtual std::vector<OrbitalData> OnMergeVector(std::vector<std::vector<OrbitalData>>& ioOrbitalVector);
+    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
+    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
 private:
     std::size_t mNumThreads{0};
-    OrbitalDataList mOrbitalList{};
+    OrbitalDataVector mOrbitalVector{};
 };
 
 // Public Non-Virtuals
@@ -112,56 +117,105 @@ std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
     return OnReadFromFile(argc, argv);
 }
 
-std::list<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleList)
+std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector)
 {
     // create a list of threads the size of the number of threads specified
-    std::vector<std::thread> threadList{mNumThreads};
-    std::size_t tleListSize = tleList.size();
+    std::vector<std::thread> threadVector{mNumThreads};
+    std::size_t tleVectorSize = tleVector.size();
 
     // calculate the number of TLEs per thread
-    std::size_t tlePerThread = tleListSize / mNumThreads;
-    auto tleBegin = tleList.begin();
-    auto tleEnd = tleList.end();
+    std::size_t tlePerThread = tleVectorSize / mNumThreads;
+    auto tleBegin = tleVector.begin();
+    auto tleEnd = tleVector.end();
 
     // loop through the threads
     for (std::size_t i = 0; i < mNumThreads; ++i)
     {
         // calculate the begin and end of the TLEs for the current thread
-        tleBegin = tleList.begin() + (i * tlePerThread);
+        tleBegin = tleVector.begin() + (i * tlePerThread);
         tleEnd = tleBegin + tlePerThread;
 
         // if this is the last thread, add the remaining TLEs
         if (i == mNumThreads - 1)
         {
-            tleEnd = tleList.end();
+            tleEnd = tleVector.end();
         }
 
         // start the thread
-        threadList[i] = std::thread(&SatOrbit::OnCalculateOrbitalData, this, tleBegin, tleEnd, std::ref(mOrbitalList));
+        threadVector[i] = std::thread(&SatOrbit::OnCalculateOrbitalDataMulti, this, tleBegin, tleEnd, std::ref(mOrbitalVector));
     }
     // wait for the threads to finish before returning
-    std::for_each(threadList.begin(), threadList.end(), [](std::thread& inThread)
+    std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
     {
         inThread.join();
     });
 
-    //OnCalculateOrbitalData(tleList.begin(), tleList.end(), mOrbitalList);
-    return std::move(std::get<1>(mOrbitalList));
+    //OnCalculateOrbitalData(tleVector.begin(), tleVector.end(), mOrbitalVector);
+    return std::move(std::get<1>(mOrbitalVector));
 }
 
-void SatOrbit::SortOrbitalList(std::list<OrbitalData>& ioOrbitalList)
+void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
 {
-    OnSortOrbitalList(ioOrbitalList);
+    // Multithreaded sort
+    // If thread count is 1, use single threaded sort
+    if (mNumThreads == 1)
+    {
+        OnSortOrbitalVector(ioOrbitalVector);
+    }
+    else
+    {
+        // create a list of threads the size of the number of threads specified
+        std::vector<std::thread> threadVector{mNumThreads};
+        std::size_t orbitVectorSize = ioOrbitalVector.size();
+        std::mutex mutex;
+
+        // calculate the number of TLEs per thread
+        std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
+        auto orbitBegin = ioOrbitalVector.begin();
+        auto orbitEnd = ioOrbitalVector.end();
+
+        std::vector<std::vector<OrbitalData>> orbitSubVectors;
+        // Create a sub-list for each thread
+        for (std::size_t i = 0; i < mNumThreads; ++i)
+        {
+            // calculate the begin and end of the TLEs for the current thread
+            orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
+            orbitEnd = orbitBegin + orbitPerThread;
+
+            // if this is the last thread, add the remaining TLEs
+            if (i == mNumThreads - 1)
+            {
+                orbitEnd = ioOrbitalVector.end();
+            }
+
+            std::vector<OrbitalData> subVector = std::vector<OrbitalData>(orbitBegin, orbitEnd);
+            // start the thread
+            // Sort each thread's sub-list
+            threadVector[i] = std::thread(&SatOrbit::OnSortOrbitalVectorMulti, std::ref(subVector));
+            orbitSubVectors.push_back(std::move(subVector));
+        }
+
+        // Join the threads together
+        // wait for the threads to finish before returning
+        std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
+        {
+            inThread.join();
+        });
+
+
+        // Merge the sub-lists together
+        ioOrbitalVector = OnMergeVector(orbitSubVectors);
+    }
 }
 
-std::list<std::list<OrbitalData>> SatOrbit::CreateTrains(const std::list<OrbitalData>& orbitalList)
+std::vector<std::vector<OrbitalData>> SatOrbit::CreateTrains(const std::vector<OrbitalData>& orbitalVector)
 {
-    return OnCreateTrains(orbitalList);
+    return OnCreateTrains(orbitalVector);
 }
 
-void SatOrbit::PrintTrains(const std::list<std::list<OrbitalData>>& trainList)
+void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector)
 {
-    OnPrintTrains(trainList);
+    OnPrintTrains(trainVector);
 }
 
 // Private Virtuals
@@ -188,14 +242,14 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
         //return 1;
     }
 
-    std::list<OrbitalData> orbitalList;
+    std::vector<OrbitalData> orbitalVector;
     std::string readLine;
 
     std::string name{};
     std::string line1{};
     std::string line2{};
     
-    std::vector<sat355::TLE> tleList;
+    std::vector<sat355::TLE> tleVector;
 
     while(!fileStream.eof())
     {
@@ -204,15 +258,15 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
         std::getline(fileStream, line2);
 
        sat355::TLE newTLE{name, line1, line2};
-        tleList.push_back(std::move(newTLE));
+        tleVector.push_back(std::move(newTLE));
     }
     
-    return tleList;
+    return tleVector;
 }
 
-void SatOrbit::OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataList& ioDataList)
+void SatOrbit::OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector)
 {
-    std::list<OrbitalData> orbitalList{};
+    std::vector<OrbitalData> orbitalVector{};
     std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
     {
         double out_tleage = 0.0;
@@ -232,42 +286,84 @@ void SatOrbit::OnCalculateOrbitalData(const tle_const_iterator& tleBegin, const 
         {
             // Warning! Cannot use tle anymore as it has been moved!
             OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
-            orbitalList.push_back(std::move(data));
+            orbitalVector.push_back(std::move(data));
         }
     });
 
-    auto& [mutex, outputList] = ioDataList; // C++17 Structured Binding simplifies tuple manipulation
+    auto& [mutex, outputVector] = ioDataVector; // C++17 Structured Binding simplifies tuple manipulation
     // Use mutex to protect access to the list
     {
         std::lock_guard<std::mutex> lock(mutex);
-        outputList.splice(outputList.end(), std::move(orbitalList));
+        outputVector.insert(outputVector.end(), orbitalVector.begin(), orbitalVector.end());
     }
 }
 
-void SatOrbit::OnSortOrbitalList(std::list<OrbitalData>& ioOrbitalList)
+void SatOrbit::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
 {
     // Sort by mean motion
-    ioOrbitalList.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
         return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
     });
 }
 
-std::list<std::list<OrbitalData>> SatOrbit::OnCreateTrains(const std::list<OrbitalData>& orbitalList)
+void SatOrbit::OnSortOrbitalVectorMulti(std::vector<OrbitalData> ioOrbitalVector, std::mutex& ioMutex)
 {
-    std::list<std::list<OrbitalData>> trainList;
-    std::list<OrbitalData> newTrain;
+    std::lock_guard<std::mutex> lock(ioMutex);
+    // Sort by mean motion
+    std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    {
+        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+    });
+}
+
+// Merge sort after multithreading
+std::vector<OrbitalData> SatOrbit::OnMergeVector(std::vector<std::vector<OrbitalData>>& inOrbitalVector)
+{
+    // Merge the lists together, sorted by mean motion
+    // Each individual sub-list has its elements sorted by mean motion, so backtracking is not necessary
+    std::vector<OrbitalData> mergedVector;
+    while (!inOrbitalVector.empty())
+    {
+        // Find the smallest mean motion in the list
+        auto minVector = inOrbitalVector.begin();
+        auto minData = minVector->begin();
+        for (auto list = inOrbitalVector.begin(); list != inOrbitalVector.end(); ++list)
+        {
+            if (list->begin()->GetTLE().GetMeanMotion() < minData->GetTLE().GetMeanMotion())
+            {
+                minVector = list;
+                minData = list->begin();
+            }
+        }
+
+        // Add the smallest mean motion to the merged list
+        mergedVector.push_back(std::move(*minData));
+        minVector->erase(minData);
+
+        // Remove the list if it is empty
+        if (minVector->empty())
+        {
+            inOrbitalVector.erase(minVector);
+        }
+    }
+}
+
+std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector<OrbitalData>& orbitalVector)
+{
+    std::vector<std::vector<OrbitalData>> trainVector;
+    std::vector<OrbitalData> newTrain;
 
     double prevMeanMotion = 0;
     double prevInclination = 0;
-    for (auto& data : orbitalList)
+    for (auto& data : orbitalVector)
     {
         double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
         double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
         if ((deltaMotion > 0.0001 || deltaInclination > 0.0001) && !newTrain.empty())
         {
             // Sort by longitude
-            newTrain.sort([](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+            std::sort(newTrain.begin(), newTrain.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
             {
                 return inLHS.GetLongitude() < inRHS.GetLongitude();
             });
@@ -275,7 +371,7 @@ std::list<std::list<OrbitalData>> SatOrbit::OnCreateTrains(const std::list<Orbit
             // Filter out wandering satellites
             if (newTrain.size() > 2)
             {
-                trainList.push_back(std::move(newTrain));
+                trainVector.push_back(std::move(newTrain));
             }
             
             newTrain.clear();
@@ -287,17 +383,17 @@ std::list<std::list<OrbitalData>> SatOrbit::OnCreateTrains(const std::list<Orbit
     }
     if (!newTrain.empty() && newTrain.size() > 2)
     {
-        trainList.push_back(newTrain);
+        trainVector.push_back(newTrain);
     }
 
-    return trainList;
+    return trainVector;
 }
 
-void SatOrbit::OnPrintTrains(const std::list<std::list<OrbitalData>>& trainList)
+void SatOrbit::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector)
 {
     int trainCount = 0;
     // Print the contents of the train list
-    for (auto& train : trainList)
+    for (auto& train : trainVector)
     {
         std::cout << "   TRAIN #" << trainCount << std::endl;
         std::cout << "   COUNT: " << train.size() << std::endl;
@@ -327,31 +423,31 @@ int main(int argc, char* argv[])
 
     // meaure time for each section in milliseconds using chrono
     auto start1 = std::chrono::high_resolution_clock::now();
-    std::vector<sat355::TLE> tleList{ satOrbit.ReadFromFile(argc, argv) };
+    std::vector<sat355::TLE> tleVector{ satOrbit.ReadFromFile(argc, argv) };
     auto end1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed1 = end1 - start1;
     std::cout << "Read from file: " << elapsed1.count() << " ms" << std::endl;
 
     auto start2 = std::chrono::high_resolution_clock::now();
-    std::list<OrbitalData> orbitalList{ satOrbit.CalculateOrbitalData(tleList) };
+    std::vector<OrbitalData> orbitalVector{ satOrbit.CalculateOrbitalData(tleVector) };
     auto end2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
     std::cout << "Calculate orbital data: " << elapsed2.count() << " ms" << std::endl;
 
     auto start3 = std::chrono::high_resolution_clock::now();
-    satOrbit.SortOrbitalList(orbitalList);
+    satOrbit.SortOrbitalVector(orbitalVector);
     auto end3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed3 = end3 - start3;
     std::cout << "Sort orbital list: " << elapsed3.count() << " ms" << std::endl;
 
     auto start4 = std::chrono::high_resolution_clock::now();
-    std::list<std::list<OrbitalData>> trainList{ satOrbit.CreateTrains(orbitalList) };
+    std::vector<std::vector<OrbitalData>> trainVector{ satOrbit.CreateTrains(orbitalVector) };
     auto end4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed4 = end4 - start4;
     std::cout << "Create trains: " << elapsed4.count() << " ms" << std::endl;
 
     auto start5 = std::chrono::high_resolution_clock::now();
-    satOrbit.PrintTrains(trainList);
+    satOrbit.PrintTrains(trainVector);
     auto end5 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed5 = end5 - start5;
     std::cout << "Print trains: " << elapsed5.count() << " ms" << std::endl;
