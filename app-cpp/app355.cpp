@@ -95,8 +95,8 @@ private:
     virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
     virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
     virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd, std::mutex& ioMutex);
-    virtual std::vector<OrbitalData> OnMergeVector(std::vector<std::vector<OrbitalData>>& ioOrbitalVector);
+    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
+    virtual void OnMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
     virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
     virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
@@ -135,7 +135,7 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
         auto tleEnd = tleVector.end();
 
         // loop through the threads
-        for (std::size_t i = 0; i < mNumThreads; ++i)
+        for (std::ptrdiff_t i = 0; i < mNumThreads; ++i)
         {
             // calculate the begin and end of the TLEs for the current thread
             tleBegin = tleVector.begin() + (i * tlePerThread);
@@ -172,40 +172,79 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     }
     else
     {
-        // create a list of threads the size of the number of threads specified
-        std::vector<std::thread> threadVector{mNumThreads};
+        
         std::size_t orbitVectorSize = ioOrbitalVector.size();
 
         // calculate the number of TLEs per thread
         std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
-        auto orbitBegin = ioOrbitalVector.begin();
-        auto orbitEnd = ioOrbitalVector.end();
-
-        std::vector<std::vector<OrbitalData>> orbitSubVectors;
-        // Create a sub-list for each thread
         std::mutex mutex;
-        for (std::size_t i = 0; i < mNumThreads; ++i)
-        {
-            // calculate the begin and end of the TLEs for the current thread
-            orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
-            orbitEnd = orbitBegin + orbitPerThread;
+        std::vector<std::tuple<orbit_iterator, orbit_iterator>> subListVector{};
 
-            // if this is the last thread, add the remaining TLEs
-            if (i == mNumThreads - 1)
+        {
+            // create a list of threads the size of the number of threads specified
+            std::vector<std::thread> threadVector{};
+
+            for (std::ptrdiff_t i = 0; i < mNumThreads; ++i)
             {
-                orbitEnd = ioOrbitalVector.end();
+                // calculate the begin and end of the TLEs for the current thread
+                auto orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
+                // if this is the last thread, add the remaining TLEs, else add orbitPerThread
+                auto orbitEnd = (i == mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
+                threadVector.push_back(std::thread(&SatOrbit::OnSortOrbitalVectorMulti, this, orbitBegin, orbitEnd));
+
+                std::tuple<orbit_iterator,orbit_iterator> slice{orbitBegin, orbitEnd};
+                subListVector.push_back(slice);
             }
-            // start the thread
-            // Sort each thread's sub-list
-            threadVector[i] = std::thread(&SatOrbit::OnSortOrbitalVectorMulti, this, orbitBegin, orbitEnd, mutex);
+            
+            // Join the threads together
+            // wait for the threads to finish before returning
+            for(auto& thread : threadVector)
+            {
+                thread.join();
+            }
         }
 
-        // Join the threads together
-        // wait for the threads to finish before returning
-        std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
+        // Merge the sorted sublists
+        // Use multithreading by merging multilple sublists at a time
+        // Join the threads before merging the set of larger sublists
+        // Loop until there is only one list of completely sorted OrbitalData
+        while (subListVector.size() > 1)
         {
-            inThread.join();
-        });
+            // Merge sort the sublists 2 at a time
+            std::vector<std::thread> threadVector{};
+            std::vector<std::tuple<orbit_iterator, orbit_iterator>> newSubListVector{};
+
+            for (std::size_t i = 1; i < subListVector.size(); i += 2)
+            {
+                // Get first 2 sublists to merge
+                auto& [begin, mid] = subListVector[i-1];
+                auto& [mid2, end] = subListVector[i];
+                // Mids must be sequential in memory
+                assert(mid == mid2);
+
+                // Start a thread to merge the 2 sublists
+                threadVector.push_back(std::thread(&SatOrbit::OnMergeVector, this, begin, mid, end));
+                // Create a new sublist element from the 2 merged sublists onto a new list
+                newSubListVector.push_back(std::make_tuple(begin, end));
+            }
+            // Wait for the threads to finish their merge operation
+            for (auto& thread : threadVector)
+            {
+                thread.join();
+            }
+
+            // If the number of sublists is odd, it would be missed in the loop above; add it to the new list
+            const bool isOdd = (subListVector.size() & 1 == 1);
+            if (isOdd)
+            {
+                newSubListVector.push_back(subListVector.back());
+            }
+
+            // Update subListVector with the new merged results
+            subListVector = std::move(newSubListVector);
+        }
+
+        //OnSortOrbitalVector(ioOrbitalVector);
     }
 }
 
@@ -304,55 +343,33 @@ void SatOrbit::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, c
     }
 }
 
+// Use inplace_merge to merge the list, denoted by the iterators
+// It will have a complexity of O(n log n), since backtracking is not required
+void SatOrbit::OnMergeVector(orbit_iterator& inBegin, orbit_iterator& inMid, orbit_iterator& inEnd)
+{
+    std::inplace_merge(inBegin, inMid, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    {
+        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+    });
+}
+
 void SatOrbit::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
 {
     // Sort by mean motion
     std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
-        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+        bool result = inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+        return result;
     });
 }
 
-void SatOrbit::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd, std::mutex& ioMutex)
+void SatOrbit::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd)
 {
-    std::lock_guard<std::mutex> lock(ioMutex);
     // Sort by mean motion
     std::sort(inBegin, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
         return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
     });
-}
-
-// Merge sort after multithreading
-std::vector<OrbitalData> SatOrbit::OnMergeVector(std::vector<std::vector<OrbitalData>>& inOrbitalVector)
-{
-    // Merge the lists together, sorted by mean motion
-    // Each individual sub-list has its elements sorted by mean motion, so backtracking is not necessary
-    std::vector<OrbitalData> mergedVector;
-    while (!inOrbitalVector.empty())
-    {
-        // Find the smallest mean motion in the list
-        auto minVector = inOrbitalVector.begin();
-        auto minData = minVector->begin();
-        for (auto list = inOrbitalVector.begin(); list != inOrbitalVector.end(); ++list)
-        {
-            if (list->begin()->GetTLE().GetMeanMotion() < minData->GetTLE().GetMeanMotion())
-            {
-                minVector = list;
-                minData = list->begin();
-            }
-        }
-
-        // Add the smallest mean motion to the merged list
-        mergedVector.push_back(std::move(*minData));
-        minVector->erase(minData);
-
-        // Remove the list if it is empty
-        if (minVector->empty())
-        {
-            inOrbitalVector.erase(minVector);
-        }
-    }
 }
 
 std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector<OrbitalData>& orbitalVector)
@@ -392,6 +409,22 @@ std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector
         trainVector.push_back(newTrain);
     }
 
+    // Some trains will be in close proximity, therefore we must merge them
+    // Merge trains whose satellites' mean motions are within 0.001 degrees of each other
+    for(std::size_t i = 0; i < trainVector.size(); ++i)
+    {
+        for(std::size_t j = i + 1; j < trainVector.size(); ++j)
+        {
+            double deltaMotion = abs(trainVector[i][0].GetTLE().GetMeanMotion() - trainVector[j][0].GetTLE().GetMeanMotion());
+            if (deltaMotion < 0.001)
+            {
+                trainVector[i].insert(trainVector[i].end(), trainVector[j].begin(), trainVector[j].end());
+                trainVector.erase(trainVector.begin() + j);
+                --j;
+            }
+        }
+    }
+    
     return trainVector;
 }
 
