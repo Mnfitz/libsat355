@@ -146,7 +146,7 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
 
         // loop through the threads
         // (std::prtdiff_t is a signed version of std::size_t)
-        for (std::ptrdiff_t i = 0; i < mNumThreads; ++i)
+        for (std::size_t i = 0; i < mNumThreads; ++i)
         {
             // calculate the begin and end of the TLEs for the current thread
             tleBegin = tleVector.begin() + (i * tlePerThread);
@@ -194,7 +194,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             // create a list of threads the size of the number of threads specified
             std::vector<std::thread> threadVector{};
 
-            for (std::ptrdiff_t i = 0; i < mNumThreads; ++i)
+            for (std::size_t i = 0; i < mNumThreads; ++i)
             {
                 // calculate the begin and end of the TLEs for the current thread
                 auto orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
@@ -244,7 +244,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             }
 
             // If the number of sublists is odd, it would be missed in the loop above; add it to the new list
-            const bool isOdd = (subListVector.size() & 1 == 1);
+            const bool isOdd = ((subListVector.size() & 1) == 1);
             if (isOdd)
             {
                 newSubListVector.push_back(subListVector.back());
