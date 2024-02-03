@@ -73,6 +73,7 @@ namespace {
 
 class SatOrbit
 {
+ // Interface
 public:
     SatOrbit(std::size_t inNumThreads = 1);
     virtual ~SatOrbit() = default;
@@ -83,6 +84,7 @@ public:
     std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
     void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
+// Types
 private:
     using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
     using tle_iterator = std::vector<sat355::TLE>::iterator;
@@ -91,6 +93,7 @@ private:
     using orbit_const_iterator = std::vector<OrbitalData>::const_iterator;
     using IteratorPairVector = std::vector<std::tuple<orbit_iterator, orbit_iterator>>;
 
+// Implementation
 private:
     virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
     virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
@@ -101,6 +104,11 @@ private:
     virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
     virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
+// Helper
+private:
+    static bool SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS);
+
+// Data Members
 private:
     std::size_t mNumThreads{0};
     OrbitalDataVector mOrbitalVector{};
@@ -137,6 +145,7 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
         auto tleEnd = tleVector.end();
 
         // loop through the threads
+        // (std::prtdiff_t is a signed version of std::size_t)
         for (std::ptrdiff_t i = 0; i < mNumThreads; ++i)
         {
             // calculate the begin and end of the TLEs for the current thread
@@ -313,7 +322,9 @@ void SatOrbit::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVecto
 
 void SatOrbit::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector)
 {
+    const auto size = std::distance(tleBegin, tleEnd);
     std::vector<OrbitalData> orbitalVector{};
+    orbitalVector.reserve(size);
     std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
     {
         double out_tleage = 0.0;
@@ -351,7 +362,7 @@ void SatOrbit::OnSortMergeVector(orbit_iterator& inBegin, orbit_iterator& inMid,
 {
     std::inplace_merge(inBegin, inMid, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
-        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+        return SortPredicate(inLHS, inRHS);
     });
 }
 
@@ -360,8 +371,7 @@ void SatOrbit::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     // Sort by mean motion
     std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
-        bool result = inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
-        return result;
+        return SortPredicate(inLHS, inRHS);
     });
 }
 
@@ -370,8 +380,14 @@ void SatOrbit::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator&
     // Sort by mean motion
     std::sort(inBegin, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
-        return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+        return SortPredicate(inLHS, inRHS);
     });
+}
+
+// Helper function
+/*static*/ bool SatOrbit::SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS)
+{
+    return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
 }
 
 std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector<OrbitalData>& orbitalVector)
