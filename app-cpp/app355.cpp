@@ -89,6 +89,7 @@ private:
     using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
     using orbit_iterator = std::vector<OrbitalData>::iterator;
     using orbit_const_iterator = std::vector<OrbitalData>::const_iterator;
+    using IteratorPairVector = std::vector<std::tuple<orbit_iterator, orbit_iterator>>;
 
 private:
     virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
@@ -96,7 +97,7 @@ private:
     virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
     virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
     virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
-    virtual void OnMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
+    virtual void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
     virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
     virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
 
@@ -105,7 +106,8 @@ private:
     OrbitalDataVector mOrbitalVector{};
 };
 
-// Public Non-Virtuals
+// NVI Interface: Public Non-Virtuals
+
 SatOrbit::SatOrbit(std::size_t inNumThreads) : 
     mNumThreads(inNumThreads)
 {
@@ -172,13 +174,12 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     }
     else
     {
-        
         std::size_t orbitVectorSize = ioOrbitalVector.size();
 
         // calculate the number of TLEs per thread
         std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
-        std::mutex mutex;
-        std::vector<std::tuple<orbit_iterator, orbit_iterator>> subListVector{};
+        // Note: no need for mutex as threads do not contend for shared elements during sort
+        IteratorPairVector subListVector{};
 
         {
             // create a list of threads the size of the number of threads specified
@@ -192,7 +193,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
                 auto orbitEnd = (i == mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
                 threadVector.push_back(std::thread(&SatOrbit::OnSortOrbitalVectorMulti, this, orbitBegin, orbitEnd));
 
-                std::tuple<orbit_iterator,orbit_iterator> slice{orbitBegin, orbitEnd};
+                IteratorPairVector::value_type slice{ orbitBegin, orbitEnd };
                 subListVector.push_back(slice);
             }
             
@@ -212,7 +213,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
         {
             // Merge sort the sublists 2 at a time
             std::vector<std::thread> threadVector{};
-            std::vector<std::tuple<orbit_iterator, orbit_iterator>> newSubListVector{};
+            IteratorPairVector newSubListVector{};
 
             for (std::size_t i = 1; i < subListVector.size(); i += 2)
             {
@@ -223,7 +224,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
                 assert(mid == mid2);
 
                 // Start a thread to merge the 2 sublists
-                threadVector.push_back(std::thread(&SatOrbit::OnMergeVector, this, begin, mid, end));
+                threadVector.push_back(std::thread(&SatOrbit::OnSortMergeVector, this, begin, mid, end));
                 // Create a new sublist element from the 2 merged sublists onto a new list
                 newSubListVector.push_back(std::make_tuple(begin, end));
             }
@@ -258,7 +259,8 @@ void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVec
     OnPrintTrains(trainVector);
 }
 
-// Private Virtuals
+// NVI Implementation: Private Virtuals
+
 std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
 {
     if (argc < 2) 
@@ -345,7 +347,7 @@ void SatOrbit::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, c
 
 // Use inplace_merge to merge the list, denoted by the iterators
 // It will have a complexity of O(n log n), since backtracking is not required
-void SatOrbit::OnMergeVector(orbit_iterator& inBegin, orbit_iterator& inMid, orbit_iterator& inEnd)
+void SatOrbit::OnSortMergeVector(orbit_iterator& inBegin, orbit_iterator& inMid, orbit_iterator& inEnd)
 {
     std::inplace_merge(inBegin, inMid, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
     {
