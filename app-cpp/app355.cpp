@@ -394,7 +394,7 @@ std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector
     double prevMeanMotion = 0;
     double prevInclination = 0;
 
-    std::for_each(orbitalVector.begin(), orbitalVector.end(), [](auto& data)
+    std::for_each(orbitalVector.begin(), orbitalVector.end(), [&](auto& data)
     {
         double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
         double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
@@ -448,7 +448,7 @@ void SatOrbit::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainV
     int trainCount = 0;
     // Print the contents of the train list
 
-    std::for_each(trainVector.begin(), trainVector.end(), [](auto& train)
+    std::for_each(trainVector.begin(), trainVector.end(), [&](auto& train)
     {
         std::cout << "   TRAIN #" << trainCount << std::endl;
         std::cout << "   COUNT: " << train.size() << std::endl;
@@ -468,6 +468,42 @@ void SatOrbit::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainV
 
 } // namespace anonymous
 
+class Timer
+{
+public:
+    Timer() = default;
+    void Start();
+    void Stop();
+    void PrintTime();
+    double GetTime();
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd;
+    std::chrono::duration<double, std::milli> mElapsedMs;
+};
+
+void Timer::Start()
+{
+    mStart = std::chrono::high_resolution_clock::now();
+}
+
+void Timer::Stop()
+{
+    mEnd = std::chrono::high_resolution_clock::now();
+    mElapsedMs = mEnd - mStart;
+}
+
+void Timer::PrintTime()
+{
+    std::cout << "Time: " << mElapsedMs.count() << " ms" << std::endl;
+}
+
+double Timer::GetTime()
+{
+    return mElapsedMs.count();
+}
+
 int main(int argc, char* argv[])
 {
     // measure total time in milliseconds using chrono 
@@ -477,39 +513,43 @@ int main(int argc, char* argv[])
     SatOrbit satOrbit{4};
 
     // meaure time for each section in milliseconds using chrono
-    auto start1 = std::chrono::high_resolution_clock::now();
+    Timer totalTimer{};
+    Timer timer{};
+    totalTimer.Start();
+
+    timer.Start();
     std::vector<sat355::TLE> tleVector{ satOrbit.ReadFromFile(argc, argv) };
-    auto end1 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed1 = end1 - start1;
-    std::cout << "Read from file: " << elapsed1.count() << " ms" << std::endl;
+    timer.Stop();
+    std::cout << "Read from file ";
+    timer.PrintTime();
 
-    auto start2 = std::chrono::high_resolution_clock::now();
+    timer.Start();
     std::vector<OrbitalData> orbitalVector{ satOrbit.CalculateOrbitalData(tleVector) };
-    auto end2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
-    std::cout << "Calculate orbital data: " << elapsed2.count() << " ms" << std::endl;
+    timer.Stop();
+    std::cout << "Calculate orbital data ";
+    timer.PrintTime();
 
-    auto start3 = std::chrono::high_resolution_clock::now();
+    timer.Start();
     satOrbit.SortOrbitalVector(orbitalVector);
-    auto end3 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed3 = end3 - start3;
-    std::cout << "Sort orbital list: " << elapsed3.count() << " ms" << std::endl;
+    timer.Stop();
+    std::cout << "Sort orbital list ";
+    timer.PrintTime();
 
-    auto start4 = std::chrono::high_resolution_clock::now();
+    timer.Start();
     std::vector<std::vector<OrbitalData>> trainVector{ satOrbit.CreateTrains(orbitalVector) };
-    auto end4 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed4 = end4 - start4;
-    std::cout << "Create trains: " << elapsed4.count() << " ms" << std::endl;
+    timer.Stop();
+    std::cout << "Create trains ";
+    timer.PrintTime();
 
-    auto start5 = std::chrono::high_resolution_clock::now();
+    timer.Start();
     satOrbit.PrintTrains(trainVector);
-    auto end5 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed5 = end5 - start5;
-    std::cout << "Print trains: " << elapsed5.count() << " ms" << std::endl;
+    timer.Stop();
+    std::cout << "Print trains ";
+    timer.PrintTime();
     
-    auto endTotal = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsedTotal = endTotal - startTotal;
-    std::cout << "Total time: " << elapsedTotal.count() << " ms" << std::endl;
+    totalTimer.Stop();
+    std::cout << "Total ";
+    totalTimer.PrintTime();
 
     return 0;
 }
