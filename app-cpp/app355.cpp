@@ -473,9 +473,7 @@ class Timer
 public:
     Timer() = default;
     void Start();
-    void Stop();
-    void PrintTime();
-    double GetTime();
+    double Stop();
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
@@ -488,19 +486,10 @@ void Timer::Start()
     mStart = std::chrono::high_resolution_clock::now();
 }
 
-void Timer::Stop()
+double Timer::Stop()
 {
     mEnd = std::chrono::high_resolution_clock::now();
     mElapsedMs = mEnd - mStart;
-}
-
-void Timer::PrintTime()
-{
-    std::cout << "Time: " << mElapsedMs.count() << " ms" << std::endl;
-}
-
-double Timer::GetTime()
-{
     return mElapsedMs.count();
 }
 
@@ -519,37 +508,25 @@ int main(int argc, char* argv[])
 
     timer.Start();
     std::vector<sat355::TLE> tleVector{ satOrbit.ReadFromFile(argc, argv) };
-    timer.Stop();
-    std::cout << "Read from file ";
-    timer.PrintTime();
+    std::cout << "Read from file: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
     std::vector<OrbitalData> orbitalVector{ satOrbit.CalculateOrbitalData(tleVector) };
-    timer.Stop();
-    std::cout << "Calculate orbital data ";
-    timer.PrintTime();
+    std::cout << "Calculate orbital data: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
     satOrbit.SortOrbitalVector(orbitalVector);
-    timer.Stop();
-    std::cout << "Sort orbital list ";
-    timer.PrintTime();
+    std::cout << "Sort orbital list: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
     std::vector<std::vector<OrbitalData>> trainVector{ satOrbit.CreateTrains(orbitalVector) };
-    timer.Stop();
-    std::cout << "Create trains ";
-    timer.PrintTime();
+    std::cout << "Create trains: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
     satOrbit.PrintTrains(trainVector);
-    timer.Stop();
-    std::cout << "Print trains ";
-    timer.PrintTime();
+    std::cout << "Print trains: " << timer.Stop() << " ms" << std::endl;
     
-    totalTimer.Stop();
-    std::cout << "Total ";
-    totalTimer.PrintTime();
+    std::cout << "Total: " << totalTimer.Stop() << " ms" << std::endl;
 
     return 0;
 }
