@@ -136,11 +136,12 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
     else
     {
         // create a list of threads the size of the number of threads specified
-        std::vector<std::thread> threadVector{mNumThreads};
-        std::size_t tleVectorSize = tleVector.size();
+        std::vector<std::thread> threadVector{};
+        threadVector.reserve(mNumThreads);
+        const std::size_t tleVectorSize = tleVector.size();
 
         // calculate the number of TLEs per thread
-        std::size_t tlePerThread = tleVectorSize / mNumThreads;
+        const std::size_t tlePerThread = tleVectorSize / mNumThreads;
         auto tleBegin = tleVector.begin();
         auto tleEnd = tleVector.end();
 
@@ -162,7 +163,7 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
             // TRICKY: mnfitz 24jan2024: std::thread usage!!
             // #1 std::ref() to force thread to take a reference& to a value; rather than a copy or pointer
             // #2 Pass 'this' as first parameter since OnCalculateOrbitalDataMulti is an instance method
-            threadVector[i] = std::thread(&SatOrbit::OnCalculateOrbitalDataMulti, this, tleBegin, tleEnd, std::ref(mOrbitalVector));
+            threadVector.push_back(std::thread(&SatOrbit::OnCalculateOrbitalDataMulti, this, tleBegin, tleEnd, std::ref(mOrbitalVector)));
         }
         // wait for the threads to finish before returning
         std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
@@ -183,10 +184,10 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     }
     else
     {
-        std::size_t orbitVectorSize = ioOrbitalVector.size();
+        const std::size_t orbitVectorSize = ioOrbitalVector.size();
 
         // calculate the number of TLEs per thread
-        std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
+        const std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
         // Note: no need for mutex as threads do not contend for shared elements during sort
         IteratorPairVector subListVector{};
 
@@ -197,9 +198,9 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             for (std::size_t i = 0; i < mNumThreads; ++i)
             {
                 // calculate the begin and end of the TLEs for the current thread
-                auto orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
+                const auto orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
                 // if this is the last thread, add the remaining TLEs, else add orbitPerThread
-                auto orbitEnd = (i == mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
+                const auto orbitEnd = (i == mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
                 threadVector.push_back(std::thread(&SatOrbit::OnSortOrbitalVectorMulti, this, orbitBegin, orbitEnd));
 
                 IteratorPairVector::value_type slice{ orbitBegin, orbitEnd };
@@ -208,10 +209,10 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             
             // Join the threads together
             // wait for the threads to finish before returning
-            for(auto& thread : threadVector)
+            std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
             {
-                thread.join();
-            }
+                inThread.join();
+            });
         }
 
         // Merge the sorted sublists
@@ -238,10 +239,10 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
                 newSubListVector.push_back(std::make_tuple(begin, end));
             }
             // Wait for the threads to finish their merge operation
-            for (auto& thread : threadVector)
+            std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
             {
-                thread.join();
-            }
+                inThread.join();
+            });
 
             // If the number of sublists is odd, it would be missed in the loop above; add it to the new list
             const bool isOdd = ((subListVector.size() & 1) == 1);
@@ -253,8 +254,6 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             // Update subListVector with the new merged results
             subListVector = std::move(newSubListVector);
         }
-
-        //OnSortOrbitalVector(ioOrbitalVector);
     }
 }
 
@@ -275,7 +274,6 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
     if (argc < 2) 
     {
         std::cout << "Please provide a file path." << std::endl;
-        //return 1;
     }
 
     std::filesystem::path filePath(argv[1]);
@@ -283,14 +281,12 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
     if (!std::filesystem::exists(filePath)) 
     {
         std::cout << "The file " << filePath << " does not exist." << std::endl;
-        //return 1;
     }
 
     std::ifstream fileStream(filePath);
     if (!fileStream) 
     {
         std::cout << "Failed to open the file " << filePath << std::endl;
-        //return 1;
     }
 
     std::vector<OrbitalData> orbitalVector;
@@ -348,7 +344,7 @@ void SatOrbit::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, c
         }
     });
 
-    auto& [mutex, outputVector] = ioDataVector; // C++17 Structured Binding simplifies tuple manipulation
+    auto& [mutex, outputVector] = ioDataVector; // C++17 Structured Binding simplifies tuple unpacking
     // Use mutex to protect access to the list
     {
         std::lock_guard<std::mutex> lock(mutex);
@@ -397,7 +393,8 @@ std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector
 
     double prevMeanMotion = 0;
     double prevInclination = 0;
-    for (auto& data : orbitalVector)
+
+    std::for_each(orbitalVector.begin(), orbitalVector.end(), [](auto& data)
     {
         double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
         double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
@@ -421,7 +418,7 @@ std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector
         prevInclination = data.GetTLE().GetInclination();
 
         newTrain.push_back(data);
-    }
+    });
     if (!newTrain.empty() && newTrain.size() > 2)
     {
         trainVector.push_back(newTrain);
@@ -429,9 +426,9 @@ std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector
 
     // Some trains will be in close proximity, therefore we must merge them
     // Merge trains whose satellites' mean motions are within 0.001 degrees of each other
-    for(std::size_t i = 0; i < trainVector.size(); ++i)
+    for (std::size_t i = 0; i < trainVector.size(); ++i)
     {
-        for(std::size_t j = i + 1; j < trainVector.size(); ++j)
+        for (std::size_t j = i + 1; j < trainVector.size(); ++j)
         {
             double deltaMotion = abs(trainVector[i][0].GetTLE().GetMeanMotion() - trainVector[j][0].GetTLE().GetMeanMotion());
             if (deltaMotion < 0.001)
@@ -450,22 +447,23 @@ void SatOrbit::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainV
 {
     int trainCount = 0;
     // Print the contents of the train list
-    for (auto& train : trainVector)
+
+    std::for_each(trainVector.begin(), trainVector.end(), [](auto& train)
     {
         std::cout << "   TRAIN #" << trainCount << std::endl;
         std::cout << "   COUNT: " << train.size() << std::endl;
-    
-        for (auto& data : train)
+
+        std::for_each(train.begin(), train.end(), [](auto& data)
         {
             // Print the name, mean motion, latitude, longitude, and altitude
             std::cout << data.GetTLE().GetName() << ": " << data.GetTLE().GetMeanMotion() << std::endl;
             std::cout << "Lat: " << data.GetLatitude() << std::endl;
             std::cout << "Lon: " << data.GetLongitude() << std::endl;
             std::cout << "Alt: " << data.GetAltitude() << std::endl << std::endl;
-        }
+        });
         std::cout << std::endl << std::endl;
         trainCount++;
-    }
+    });
 }
 
 } // namespace anonymous
@@ -475,7 +473,7 @@ int main(int argc, char* argv[])
     // measure total time in milliseconds using chrono 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
-    // 4 threads
+    // 4 threads is baseline
     SatOrbit satOrbit{4};
 
     // meaure time for each section in milliseconds using chrono
