@@ -225,6 +225,7 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
             std::vector<std::thread> threadVector{};
             IteratorPairVector newSubListVector{};
 
+            // This loop will merge the sublists 2 at a time, therefore we start at 1 and increment by 2
             for (std::size_t i = 1; i < subListVector.size(); i += 2)
             {
                 // Get first 2 sublists to merge
@@ -466,8 +467,6 @@ void SatOrbit::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainV
     });
 }
 
-} // namespace anonymous
-
 class Timer
 {
 public:
@@ -492,6 +491,8 @@ double Timer::Stop()
     mElapsedMs = mEnd - mStart;
     return mElapsedMs.count();
 }
+
+} // namespace anonymous
 
 int main(int argc, char* argv[])
 {
