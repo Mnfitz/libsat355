@@ -275,6 +275,8 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
     if (argc < 2) 
     {
         std::cout << "Please provide a file path." << std::endl;
+        const auto err = std::make_error_code(std::errc::invalid_argument);
+        throw std::filesystem::filesystem_error("Path not given", err);
     }
 
     std::filesystem::path filePath(argv[1]);
@@ -282,12 +284,16 @@ std::vector<sat355::TLE> SatOrbit::OnReadFromFile(int argc, char* argv[])
     if (!std::filesystem::exists(filePath)) 
     {
         std::cout << "The file " << filePath << " does not exist." << std::endl;
+        const auto err = std::make_error_code(std::errc::no_such_file_or_directory);
+        throw std::filesystem::filesystem_error("File does not exist", err);
     }
 
     std::ifstream fileStream(filePath);
     if (!fileStream) 
     {
         std::cout << "Failed to open the file " << filePath << std::endl;
+        const auto err = std::make_error_code(std::errc::io_error);
+        throw std::filesystem::filesystem_error("File could not be opened", err);
     }
 
     std::vector<OrbitalData> orbitalVector;
