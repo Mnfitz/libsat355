@@ -107,6 +107,7 @@ private:
 // Helper
 private:
     static bool SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS);
+    void CalculateOrbitalDataMulti(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
 
 // Data Members
 private:
@@ -135,41 +136,7 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
     }
     else
     {
-        // create a list of threads the size of the number of threads specified
-        std::vector<std::thread> threadVector{};
-        threadVector.reserve(mNumThreads);
-        const std::size_t tleVectorSize = tleVector.size();
-
-        // calculate the number of TLEs per thread
-        const std::size_t tlePerThread = tleVectorSize / mNumThreads;
-        auto tleBegin = tleVector.begin();
-        auto tleEnd = tleVector.end();
-
-        // loop through the threads
-        // (std::prtdiff_t is a signed version of std::size_t)
-        for (std::size_t i = 0; i < mNumThreads; ++i)
-        {
-            // calculate the begin and end of the TLEs for the current thread
-            tleBegin = tleVector.begin() + (i * tlePerThread);
-            tleEnd = tleBegin + tlePerThread;
-
-            // if this is the last thread, add the remaining TLEs
-            if (i == mNumThreads - 1)
-            {
-                tleEnd = tleVector.end();
-            }
-
-            // start the thread
-            // TRICKY: mnfitz 24jan2024: std::thread usage!!
-            // #1 std::ref() to force thread to take a reference& to a value; rather than a copy or pointer
-            // #2 Pass 'this' as first parameter since OnCalculateOrbitalDataMulti is an instance method
-            threadVector.push_back(std::thread(&SatOrbit::OnCalculateOrbitalDataMulti, this, tleBegin, tleEnd, std::ref(mOrbitalVector)));
-        }
-        // wait for the threads to finish before returning
-        std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
-        {
-            inThread.join();
-        });
+        CalculateOrbitalDataMulti(tleVector, mOrbitalVector);
     }
     return std::move(std::get<1>(mOrbitalVector));
 }
@@ -391,6 +358,45 @@ void SatOrbit::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator&
 /*static*/ bool SatOrbit::SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS)
 {
     return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
+}
+
+void SatOrbit::CalculateOrbitalDataMulti(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector)
+{
+    // create a list of threads the size of the number of threads specified
+        std::vector<std::thread> threadVector{};
+        threadVector.reserve(mNumThreads);
+        const std::size_t tleVectorSize = inTLEVector.size();
+
+        // calculate the number of TLEs per thread
+        const std::size_t tlePerThread = tleVectorSize / mNumThreads;
+        auto tleBegin = inTLEVector.begin();
+        auto tleEnd = inTLEVector.end();
+
+        // loop through the threads
+        // (std::prtdiff_t is a signed version of std::size_t)
+        for (std::size_t i = 0; i < mNumThreads; ++i)
+        {
+            // calculate the begin and end of the TLEs for the current thread
+            tleBegin = inTLEVector.begin() + (i * tlePerThread);
+            tleEnd = tleBegin + tlePerThread;
+
+            // if this is the last thread, add the remaining TLEs
+            if (i == mNumThreads - 1)
+            {
+                tleEnd = inTLEVector.end();
+            }
+
+            // start the thread
+            // TRICKY: mnfitz 24jan2024: std::thread usage!!
+            // #1 std::ref() to force thread to take a reference& to a value; rather than a copy or pointer
+            // #2 Pass 'this' as first parameter since OnCalculateOrbitalDataMulti is an instance method
+            threadVector.push_back(std::thread(&SatOrbit::OnCalculateOrbitalDataMulti, this, tleBegin, tleEnd, std::ref(ioDataVector)));
+        }
+        // wait for the threads to finish before returning
+        std::for_each(threadVector.begin(), threadVector.end(), [](std::thread& inThread)
+        {
+            inThread.join();
+        });
 }
 
 std::vector<std::vector<OrbitalData>> SatOrbit::OnCreateTrains(const std::vector<OrbitalData>& orbitalVector)
