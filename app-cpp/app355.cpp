@@ -112,6 +112,7 @@ private:
 private:
     std::size_t mNumThreads{0};
     OrbitalDataVector mOrbitalVector{};
+    std::mutex mOrbitMutex{};
 };
 
 // NVI Interface: Public Non-Virtuals
@@ -135,6 +136,9 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
     }
     else
     {
+        // lock the orbit mutex as both calculate and sort could be multithreaded
+        std::lock_guard<std::mutex> lock(mOrbitMutex);
+
         // create a list of threads the size of the number of threads specified
         std::vector<std::thread> threadVector{};
         threadVector.reserve(mNumThreads);
@@ -184,6 +188,9 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     }
     else
     {
+        // lock the orbit mutex as both calculate and sort could be multithreaded
+        std::lock_guard<std::mutex> lock(mOrbitMutex);
+
         const std::size_t orbitVectorSize = ioOrbitalVector.size();
 
         // calculate the number of TLEs per thread
