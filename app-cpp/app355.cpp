@@ -333,6 +333,7 @@ void SatOrbit::SortOrbitalVectorMulti(std::vector<OrbitalData>& ioOrbitalVector)
         // Note: no need for mutex as threads do not contend for shared elements during sort
         IteratorPairVector subListVector{};
 
+        // Block scope that has multiple threads quicksort segments of the vector
         {
             // create a list of threads the size of the number of threads specified
             std::vector<std::thread> threadVector{};
@@ -342,11 +343,12 @@ void SatOrbit::SortOrbitalVectorMulti(std::vector<OrbitalData>& ioOrbitalVector)
                 // calculate the begin and end of the TLEs for the current thread
                 const auto orbitBegin = ioOrbitalVector.begin() + (i * orbitPerThread);
                 // if this is the last thread, add the remaining TLEs, else add orbitPerThread
-                const auto orbitEnd = (i == mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
+                const auto orbitEnd = (i >= mNumThreads - 1) ? ioOrbitalVector.end() : orbitBegin + orbitPerThread;
                 threadVector.push_back(std::thread(&SatOrbit::OnSortOrbitalVectorMulti, this, orbitBegin, orbitEnd));
-
-                IteratorPairVector::value_type slice{ orbitBegin, orbitEnd };
-                subListVector.push_back(slice);
+                
+                auto slice = std::make_tuple(orbitBegin, orbitEnd );
+                //IteratorPairVector::value_type slice{ orbitBegin, orbitEnd };
+                subListVector.push_back(std::move(slice));
             }
             
             // Join the threads together
