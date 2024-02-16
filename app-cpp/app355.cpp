@@ -114,7 +114,6 @@ private:
 private:
     std::size_t mNumThreads{0};
     OrbitalDataVector mOrbitalVector{};
-    std::mutex mOrbitMutex{};
 };
 
 // NVI Interface: Public Non-Virtuals
@@ -138,8 +137,6 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
     }
     else
     {
-        // lock the orbit mutex as both calculate and sort could be multithreaded
-        std::lock_guard<std::mutex> lock(mOrbitMutex);    
         CalculateOrbitalDataMulti(tleVector, mOrbitalVector);
     }
     return std::move(std::get<1>(mOrbitalVector));
@@ -155,8 +152,6 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     }
     else
     {
-        // lock the orbit mutex as both calculate and sort could be multithreaded
-        std::lock_guard<std::mutex> lock(mOrbitMutex);
         SortOrbitalVectorMulti(ioOrbitalVector);
     }
 }
@@ -334,14 +329,17 @@ void SatOrbit::SortOrbitalVectorMulti(std::vector<OrbitalData>& ioOrbitalVector)
 
     // calculate the number of TLEs per thread
     const std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
-    // Note: no need for mutex as threads do not contend for shared elements during sort
     IteratorPairVector subListVector{};
+
+    // Lock the orbit mutex as both calculate and sort could be multithreaded
+    auto& [mutex, outputVector] = mOrbitalVector;
+    std::lock_guard<std::mutex> lock(mutex);
 
     // Block scope that has multiple threads quicksort segments of the vector
     {
         // create a list of threads the size of the number of threads specified
         std::vector<std::thread> threadVector{};
-
+    
         for (std::size_t i = 0; i < mNumThreads; ++i)
         {
             // calculate the begin and end of the TLEs for the current thread
