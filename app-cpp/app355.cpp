@@ -306,9 +306,9 @@ void SatOrbit::CalculateOrbitalDataMulti(const std::vector<sat355::TLE>& inTLEVe
     for (std::size_t i = 0; i < mNumThreads; ++i)
     {
         // calculate the begin and end of the TLEs for the current thread
-        auto tleBegin = inTLEVector.begin() + (i * tlePerThread);
+        const auto tleBegin = inTLEVector.begin() + (i * tlePerThread);
         // if this is the last thread, add the remaining TLEs
-        auto tleEnd = (i == mNumThreads - 1) ? inTLEVector.end() : tleBegin + tlePerThread;
+        const auto tleEnd = (i == mNumThreads - 1) ? inTLEVector.end() : tleBegin + tlePerThread;
 
         // start the thread
         // TRICKY: mnfitz 24jan2024: std::thread usage!!
