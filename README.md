@@ -24,6 +24,7 @@ Invoke the following CMake command: `cmake --build ./build`
 ```
 
 ### Build Requirements
-+ Visual Studio Code v 1.86.1 or + Visual Studio 2022 v 17.8.6
++ Visual Studio Code v 1.86.1 or greater
++ Visual Studio 2022 v 17.8.6 or greater
 + Xcode version 15 (latest)
 + C++ 17
