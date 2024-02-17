@@ -113,7 +113,6 @@ private:
 // Data Members
 private:
     std::size_t mNumThreads{0};
-    OrbitalDataVector mOrbitalVector{};
 };
 
 // NVI Interface: Public Non-Virtuals
@@ -131,23 +130,18 @@ std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
 
 std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector)
 {
-    auto& [mutex, outputVector] = mOrbitalVector;
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        outputVector.clear();
-    }
+    OrbitalDataVector orbitalVector{};
 
     if (mNumThreads == 1)
     {
-        OnCalculateOrbitalData(tleVector, mOrbitalVector);
+        OnCalculateOrbitalData(tleVector, orbitalVector);
     }
     else
     {
-        CalculateOrbitalDataMulti(tleVector, mOrbitalVector);
+        CalculateOrbitalDataMulti(tleVector, orbitalVector);
     }
 
-    std::lock_guard<std::mutex> lock(mutex);
-    return std::move(outputVector);
+    return std::move(std::get<1>(orbitalVector));
 }
 
 void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
