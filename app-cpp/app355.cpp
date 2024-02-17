@@ -131,6 +131,12 @@ std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
 
 std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector)
 {
+    auto& [mutex, outputVector] = mOrbitalVector;
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        outputVector.clear();
+    }
+
     if (mNumThreads == 1)
     {
         OnCalculateOrbitalData(tleVector, mOrbitalVector);
@@ -139,19 +145,23 @@ std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355
     {
         CalculateOrbitalDataMulti(tleVector, mOrbitalVector);
     }
-    return std::move(std::get<1>(mOrbitalVector));
+
+    std::lock_guard<std::mutex> lock(mutex);
+    return std::move(outputVector);
 }
 
 void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
 {
-    // Multithreaded sort
-    // If thread count is 1, use single threaded sort
+    // Note: This routine assumes it has exclusive access to the vector
+    // It's the app's responsibility to externally provide mutual exclusion if necessary
     if (mNumThreads == 1)
     {
+        // If thread count is 1, use single threaded sort
         OnSortOrbitalVector(ioOrbitalVector);
     }
     else
     {
+        // Multithreaded sort
         SortOrbitalVectorMulti(ioOrbitalVector);
     }
 }
@@ -330,10 +340,6 @@ void SatOrbit::SortOrbitalVectorMulti(std::vector<OrbitalData>& ioOrbitalVector)
     // calculate the number of TLEs per thread
     const std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
     IteratorPairVector subListVector{};
-
-    // Lock the orbit mutex as both calculate and sort could be multithreaded
-    auto& [mutex, outputVector] = mOrbitalVector;
-    std::lock_guard<std::mutex> lock(mutex);
 
     // Block scope that has multiple threads quicksort segments of the vector
     {
