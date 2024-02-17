@@ -113,7 +113,6 @@ private:
 // Data Members
 private:
     std::size_t mNumThreads{0};
-    OrbitalDataVector mOrbitalVector{};
 };
 
 // NVI Interface: Public Non-Virtuals
@@ -131,27 +130,32 @@ std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
 
 std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector)
 {
+    OrbitalDataVector orbitalVector{};
+
     if (mNumThreads == 1)
     {
-        OnCalculateOrbitalData(tleVector, mOrbitalVector);
+        OnCalculateOrbitalData(tleVector, orbitalVector);
     }
     else
     {
-        CalculateOrbitalDataMulti(tleVector, mOrbitalVector);
+        CalculateOrbitalDataMulti(tleVector, orbitalVector);
     }
-    return std::move(std::get<1>(mOrbitalVector));
+
+    return std::move(std::get<1>(orbitalVector));
 }
 
 void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
 {
-    // Multithreaded sort
-    // If thread count is 1, use single threaded sort
+    // Note: This routine assumes it has exclusive access to the vector
+    // It's the app's responsibility to externally provide mutual exclusion if necessary
     if (mNumThreads == 1)
     {
+        // If thread count is 1, use single threaded sort
         OnSortOrbitalVector(ioOrbitalVector);
     }
     else
     {
+        // Multithreaded sort
         SortOrbitalVectorMulti(ioOrbitalVector);
     }
 }
@@ -329,14 +333,13 @@ void SatOrbit::SortOrbitalVectorMulti(std::vector<OrbitalData>& ioOrbitalVector)
 
     // calculate the number of TLEs per thread
     const std::size_t orbitPerThread = orbitVectorSize / mNumThreads;
-    // Note: no need for mutex as threads do not contend for shared elements during sort
     IteratorPairVector subListVector{};
 
     // Block scope that has multiple threads quicksort segments of the vector
     {
         // create a list of threads the size of the number of threads specified
         std::vector<std::thread> threadVector{};
-
+    
         for (std::size_t i = 0; i < mNumThreads; ++i)
         {
             // calculate the begin and end of the TLEs for the current thread
