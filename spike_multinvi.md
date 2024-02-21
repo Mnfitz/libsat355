@@ -82,13 +82,42 @@ Q: Can we benefit from increased modularity and adds increased functionality wit
 Q: Is-a VS Has-a? Pros and cons of each? 
 Proposed:
 ```
-// Single thread class
-class SatOrbitSingle
+// abstract base class
+class SatOrbit
 {
  // Interface
 public:
     SatOrbit() = default;
     virtual ~SatOrbit() = default;
+
+    std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
+    virtual std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector) = 0;
+    virtual void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) = 0;
+    virtual std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector) = 0;
+    virtual void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
+
+// Types
+protected:
+    using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
+    using orbit_iterator = std::vector<OrbitalData>::iterator;
+
+// Implementation
+private:
+    // SatOrbit
+    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
+    virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
+    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
+    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
+    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
+};
+
+
+class SatOrbitSingle : public SatOrbit
+{
+ // Interface
+public:
+    SatOrbitSingle() = default;
+    virtual ~SatOrbitSingle() = default;
 
     std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
     std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
@@ -112,7 +141,7 @@ private:
 };
 
 
-// Multi thread class: Is-a SatOrbitSingle
+// Multi thread class: Is-a SatOrbit
 class SatOrbitMulti : public SatOrbitSingle
 {
 // Interface
@@ -136,56 +165,14 @@ private:
 private:
     std::size_t mNumThreads{0};
 };
-
-
-// Multi thread class: Has-a SatOrbitSingle
-class SatOrbitMulti
-{
-// Interface
-public:
-    SatOrbitMulti(std::size_t inNumThreads = 1);
-    virtual ~SatOrbitMulti() = default;
-
-    std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
-    std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
-    void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-    std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
-    void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
-
-// Types
-private:
-    using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
-    using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
-    using orbit_iterator = std::vector<OrbitalData>::iterator;
-    using IteratorPairVector = std::vector<std::tuple<orbit_iterator, orbit_iterator>>;
-
-// Implementation
-private:
-    // SatOrbit
-    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
-    virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
-    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
-
-    // SatOrbitMulti
-    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
-    virtual void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
-
-// Data Members
-private:
-    std::size_t mNumThreads{0};
-    SatOrbitSingle mSatOrbit{};
-};
 ```
 
 - Has-a
 Pros:
 Increased modularity
 Simpler to implement
-No need to change API if dependencies update
-Aggregation preferred
+Interface is independent of any dependencies; meaning if any dependencies change, the interface is unaffected
+Aggregation is preferred 9 times out of 10 over inheritance, since it allows objects to share information and operations. 
 
 Cons:
 Users of the old API must update their code to utilize new APIs
@@ -196,10 +183,12 @@ No backwards compatibility
 Pros:
 Follows conventions of NVI
 Inheritance allows for multiple implementations
+Allows updating of API behind the scenes, so users won't have to update API to get new features
 
 Cons:
 More complex
-Inheritance not preferred
-Implementation not visible
+Inheritance not typically preferred, as it leads to higher coupling between classes, making it more rigid and less modular
+Violates encapsulation principle, as methods and data members can be accessed by derived classes
 
-Is-a is less commonly used, but would be preferred for this project
+
+Is-a is less commonly used, but would be preferred for this project, since we want high coupling and to be able to modify the implementation for existing API.
