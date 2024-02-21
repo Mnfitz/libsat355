@@ -179,3 +179,27 @@ private:
     SatOrbitSingle mSatOrbit{};
 };
 ```
+
+- Has-a
+Pros:
+Increased modularity
+Simpler to implement
+No need to change API if dependencies update
+Aggregation preferred
+
+Cons:
+Users of the old API must update their code to utilize new APIs
+No backwards compatibility
+
+
+- Is-a
+Pros:
+Follows conventions of NVI
+Inheritance allows for multiple implementations
+
+Cons:
+More complex
+Inheritance not preferred
+Implementation not visible
+
+Is-a is less commonly used, but would be preferred for this project
