@@ -91,35 +91,6 @@ public:
     virtual ~SatOrbit() = default;
 
     std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
-    virtual std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector) = 0;
-    virtual void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) = 0;
-    virtual std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector) = 0;
-    virtual void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
-
-// Types
-protected:
-    using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
-    using orbit_iterator = std::vector<OrbitalData>::iterator;
-
-// Implementation
-private:
-    // SatOrbit
-    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
-    virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
-    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
-};
-
-
-class SatOrbitSingle : public SatOrbit
-{
- // Interface
-public:
-    SatOrbitSingle() = default;
-    virtual ~SatOrbitSingle() = default;
-
-    std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
     std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
     void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
     std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
@@ -133,11 +104,28 @@ protected:
 // Implementation
 private:
     // SatOrbit
-    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]);
-    virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector);
-    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
+    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) = 0;
+    virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) = 0;
+    virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) = 0;
+    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector) = 0;
+    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
+};
+
+
+class SatOrbitSingle : public SatOrbit
+{
+public:
+    SatOrbitSingle() = default;
+    virtual ~SatOrbitSingle() = default;
+
+// Implementation
+private:
+    // SatOrbit
+    std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) override;
+    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
+    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
+    std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector) override;
+    void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) override;
 };
 
 
@@ -156,10 +144,14 @@ private:
 
 // Implementation
 private:
+    // SatOrbit
+    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
+    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
+
     // SatOrbitMulti
-    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
-    virtual void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
+    void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector) override;
+    void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd) override;
+    void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd) override;
 
 // Data Members
 private:
