@@ -87,10 +87,8 @@ public:
 // Types
 private:
     using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
-    using tle_iterator = std::vector<sat355::TLE>::iterator;
     using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
     using orbit_iterator = std::vector<OrbitalData>::iterator;
-    using orbit_const_iterator = std::vector<OrbitalData>::const_iterator;
     using IteratorPairVector = std::vector<std::tuple<orbit_iterator, orbit_iterator>>;
 
 // Implementation
