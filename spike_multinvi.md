@@ -149,9 +149,9 @@ private:
     void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
 
     // SatOrbitMulti
-    void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector) override;
-    void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd) override;
-    void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd) override;
+    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
+    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
+    virtual void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
 
 // Data Members
 private:
