@@ -6,6 +6,22 @@
 #define _snprintf_s (snprintf)
 #endif // WIN32
 
+// std
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <mutex>
+#include <string>
+#include <tuple>
+#include <vector>
+
+// self
+#include "libsat355.h"
+
 #pragma region class OrbitalData
 class OrbitalData
 {
@@ -63,7 +79,7 @@ public:
 };
 #pragma endregion {}
 
-namespace 
+namespace app355
 {
 #if 0
 #pragma region class SatOrbit
@@ -112,21 +128,28 @@ private:
 #else
 
 //--------------------------------------------------
-
 #pragma region class SatOrbit
 // abstract base class
 class SatOrbit
 {
+public:
+    enum class SatOrbitKind
+    {
+        kDefault = 0,
+        kSingle,
+        kMulti
+    };
+
  // Interface
 public:
     SatOrbit() = default;
     virtual ~SatOrbit() = default;
-
     std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
     std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
     void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
     std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
     void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
+    static std::unique_ptr<SatOrbit> Make(SatOrbitKind inKind = SatOrbitKind::kDefault);
 
 // Types
 protected:
@@ -144,79 +167,8 @@ private:
 };
 #pragma endregion {}
 
-//--------------------------------------------------
-
-#pragma region class SatOrbitSingle
-
-class SatOrbitSingle : public SatOrbit
-{
-public:
-    SatOrbitSingle() = default;
-    virtual ~SatOrbitSingle() = default;
-
-// Implementation
-private:
-    // SatOrbit
-    std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) override;
-    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
-    std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector) override;
-    void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) override;
-};
-#pragma endregion {}
-
-//--------------------------------------------------
-
-#pragma region class SatOrbitMulti
-// Multi thread class: Is-a SatOrbit
-class SatOrbitMulti : public SatOrbitSingle
-{
-// Interface
-public:
-    SatOrbitMulti(std::size_t inNumThreads = 1);
-    ~SatOrbitMulti() override = default;
-
-// Types
-private:
-    using tle_const_iterator = std::vector<sat355::TLE>::const_iterator;
-    using IteratorPairVector = std::vector<std::tuple<orbit_iterator, orbit_iterator>>;
-
-// Implementation
-private:
-    // SatOrbit
-    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
-
-    // SatOrbitMulti
-    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
-    virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
-    virtual void OnSortMergeVector(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
-
-// Data Members
-private:
-    std::size_t mNumThreads{0};
-};
-#pragma endregion {}
 #endif
-
-//--------------------------------------------------
-
-#pragma region class Timer
-
-class Timer
-{
-public:
-    Timer() = default;
-    void Start();
-    double Stop();
-
-private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
-    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd;
-    std::chrono::duration<double, std::milli> mElapsedMs;
-};
-#pragma endregion {}
-} // anonymous namespace
+} // namespace app355
 
 int main(int argc, char* argv[]);
 
