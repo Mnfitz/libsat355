@@ -17,6 +17,7 @@
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <thread>
 #include <vector>
 
 // self

@@ -333,12 +333,15 @@ void SatOrbitMulti::OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterat
 std::unique_ptr<SatOrbit> SatOrbit::Make(SatOrbitKind inKind)
 {
     std::unique_ptr<SatOrbit> result = nullptr;
+    std::size_t coreCount = std::thread::hardware_concurrency();
+
     switch (inKind)
     {
     case SatOrbitKind::kDefault:
+        // [[fallthrough]] tells the compiler that the fallthrough is intentional, and to not make a warning
         [[fallthrough]];
     case SatOrbitKind::kMulti:
-        result = SatOrbitMulti::Make();
+        result = SatOrbitMulti::Make(coreCount);
         break;
     case SatOrbitKind::kSingle:
         result = SatOrbitSingle::Make();
