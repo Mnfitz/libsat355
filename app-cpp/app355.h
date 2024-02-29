@@ -23,6 +23,9 @@
 // self
 #include "libsat355.h"
 
+// All public interface methods in .hpp files should exist in a named namespace
+namespace app355 {
+
 #pragma region class OrbitalData
 class OrbitalData
 {
@@ -119,7 +122,9 @@ private:
     virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
 };
 #pragma endregion {}
+} // namespace app355
 
+// Main is the only function in global namespace
 int main(int argc, char* argv[]);
 
 #endif // APP355_H

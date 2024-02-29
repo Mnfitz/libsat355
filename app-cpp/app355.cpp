@@ -1,11 +1,12 @@
 // Self
 #include "app355.h"
 
-namespace {
+// Anonymous namespace should only exist in .cpp
+namespace /*anonymous*/ {
 //----------------------------------------
 #pragma region SatOrbitSingle
 
-class SatOrbitSingle : public SatOrbit
+class SatOrbitSingle : public app355::SatOrbit
 {
 public:
     SatOrbitSingle() = default;
@@ -14,16 +15,16 @@ public:
 
 // Helper
 protected:
-    static bool SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS);
+    static bool SortPredicate(const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS);
 
 // Implementation
 private:
     // SatOrbit
     std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) override;
     void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
-    std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector) override;
-    void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) override;
+    void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
+    std::vector<std::vector<app355::OrbitalData>> OnCreateTrains(const std::vector<app355::OrbitalData>& orbitalVector) override;
+    void OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& trainVector) override;
 };
 
 std::unique_ptr<SatOrbitSingle> SatOrbitSingle::Make()
@@ -38,7 +39,7 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
     auto tleBegin = inTLEVector.begin();
     auto tleEnd = inTLEVector.end();
     const auto size = std::distance(tleBegin, tleEnd);
-    std::vector<OrbitalData> orbitalVector{};
+    std::vector<app355::OrbitalData> orbitalVector{};
     orbitalVector.reserve(size);
     std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
     {
@@ -58,7 +59,7 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
         if (result == 0)
         {
             // Warning! Cannot use tle anymore as it has been moved!
-            OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
+            app355::OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
             orbitalVector.push_back(std::move(data));
         }
     });
@@ -71,9 +72,9 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
     }
 }
 
-void SatOrbitSingle::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
+void SatOrbitSingle::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector)
 {
-    std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    std::sort(ioOrbitalVector.begin(), ioOrbitalVector.end(), [](const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS) -> bool
     {
         return SortPredicate(inLHS, inRHS);
     });
@@ -106,7 +107,7 @@ std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int argc, char* argv[])
         throw std::filesystem::filesystem_error("File could not be opened", err);
     }
 
-    std::vector<OrbitalData> orbitalVector;
+    std::vector<app355::OrbitalData> orbitalVector;
     std::string readLine;
 
     std::string name{};
@@ -128,10 +129,10 @@ std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int argc, char* argv[])
     return tleVector;
 }
 
-std::vector<std::vector<OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::vector<OrbitalData>& orbitalVector)
+std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::vector<app355::OrbitalData>& orbitalVector)
 {
-    std::vector<std::vector<OrbitalData>> trainVector;
-    std::vector<OrbitalData> newTrain;
+    std::vector<std::vector<app355::OrbitalData>> trainVector;
+    std::vector<app355::OrbitalData> newTrain;
 
     double prevMeanMotion = 0;
     double prevInclination = 0;
@@ -143,7 +144,7 @@ std::vector<std::vector<OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::
         if ((deltaMotion > 0.0001 || deltaInclination > 0.0001) && !newTrain.empty())
         {
             // Sort by longitude
-            std::sort(newTrain.begin(), newTrain.end(), [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+            std::sort(newTrain.begin(), newTrain.end(), [](const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS) -> bool
             {
                 return inLHS.GetLongitude() < inRHS.GetLongitude();
             });
@@ -185,7 +186,7 @@ std::vector<std::vector<OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::
     return trainVector;
 }
 
-void SatOrbitSingle::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector)
+void SatOrbitSingle::OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& trainVector)
 {
     int trainCount = 0;
     // Print the contents of the train list
@@ -209,7 +210,7 @@ void SatOrbitSingle::OnPrintTrains(const std::vector<std::vector<OrbitalData>>& 
 }
 
 // Helper
-/*static*/ bool SatOrbitSingle::SortPredicate(const OrbitalData& inLHS, const OrbitalData& inRHS)
+/*static*/ bool SatOrbitSingle::SortPredicate(const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS)
 {
     return inLHS.GetTLE().GetMeanMotion() < inRHS.GetTLE().GetMeanMotion();
 }
@@ -240,7 +241,7 @@ private:
 private:
     // SatOrbit
     void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) override;
+    void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
 
     // SatOrbitMulti
     virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
@@ -264,7 +265,7 @@ void SatOrbitMulti::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLE
         OnCalculateOrbitalDataMulti(inTLEVector.begin(), inTLEVector.end(), ioDataVector);
 }
 
-void SatOrbitMulti::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
+void SatOrbitMulti::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector)
 {
     // Multithreaded sort
     OnSortOrbitalVectorMulti(ioOrbitalVector.begin(), ioOrbitalVector.end());
@@ -274,7 +275,7 @@ void SatOrbitMulti::OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVecto
 void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector)
 {
     const auto size = std::distance(tleBegin, tleEnd);
-    std::vector<OrbitalData> orbitalVector{};
+    std::vector<app355::OrbitalData> orbitalVector{};
     orbitalVector.reserve(size);
     std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
     {
@@ -294,7 +295,7 @@ void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBeg
         if (result == 0)
         {
             // Warning! Cannot use tle anymore as it has been moved!
-            OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
+            app355::OrbitalData data(inTLE, out_latdegs, out_londegs, out_altkm);
             orbitalVector.push_back(std::move(data));
         }
     });
@@ -310,7 +311,7 @@ void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBeg
 void SatOrbitMulti::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd)
 {
     // Sort by mean motion
-    std::sort(inBegin, inEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    std::sort(inBegin, inEnd, [](const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS) -> bool
     {
         return SortPredicate(inLHS, inRHS);
     });
@@ -318,7 +319,7 @@ void SatOrbitMulti::OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iter
 
 void SatOrbitMulti::OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd)
 {
-    std::inplace_merge(ioBegin, ioMid, ioEnd, [](const OrbitalData& inLHS, const OrbitalData& inRHS) -> bool
+    std::inplace_merge(ioBegin, ioMid, ioEnd, [](const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS) -> bool
     {
         return SortPredicate(inLHS, inRHS);
     });
@@ -328,7 +329,6 @@ void SatOrbitMulti::OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterat
 
 //----------------------------------------
 #pragma region Timer
-
 
 class Timer
 {
@@ -354,9 +354,11 @@ double Timer::Stop()
     mElapsedMs = mEnd - mStart;
     return mElapsedMs.count();
 }
-} // anonymous namespace
 #pragma endregion {}
+} // anonymous namespace
 
+// All methods declared within a namespace in .hpp should be defined within the same namespace in .cpp
+namespace app355 {
 //----------------------------------------
 #pragma region SatOrbit
 
@@ -411,14 +413,17 @@ void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVec
 
 #pragma endregion {}
 
+} // namespace app355
+
 //----------------------------------------
+// Main is the only function in global namespace
 int main(int argc, char* argv[])
 {
     // measure total time in milliseconds using chrono 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
     // 4 threads is baseline
-    auto satOrbit = SatOrbit::Make(SatOrbit::SatOrbitKind::kMulti);
+    auto satOrbit = app355::SatOrbit::Make(app355::SatOrbit::SatOrbitKind::kMulti);
 
     // meaure time for each section in milliseconds using chrono
     Timer totalTimer{};
@@ -430,7 +435,7 @@ int main(int argc, char* argv[])
     std::cout << "Read from file: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
-    std::vector<OrbitalData> orbitalVector{satOrbit->CalculateOrbitalData(tleVector)};
+    std::vector<app355::OrbitalData> orbitalVector{satOrbit->CalculateOrbitalData(tleVector)};
     std::cout << "Calculate orbital data: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
@@ -438,7 +443,7 @@ int main(int argc, char* argv[])
     std::cout << "Sort orbital list: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
-    std::vector<std::vector<OrbitalData>> trainVector{satOrbit->CreateTrains(orbitalVector)};
+    std::vector<std::vector<app355::OrbitalData>> trainVector{satOrbit->CreateTrains(orbitalVector)};
     std::cout << "Create trains: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
