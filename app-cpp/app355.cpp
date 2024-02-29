@@ -115,7 +115,7 @@ std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int argc, char* argv[])
     
     std::vector<sat355::TLE> tleVector;
 
-    while(!fileStream.eof())
+    while (!fileStream.eof())
     {
         std::getline(fileStream, name);
         std::getline(fileStream, line1);
@@ -327,13 +327,44 @@ void SatOrbitMulti::OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterat
 #pragma endregion{}
 
 //----------------------------------------
+#pragma region Timer
+
+
+class Timer
+{
+public:
+    Timer() = default;
+    void Start();
+    double Stop();
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd;
+    std::chrono::duration<double, std::milli> mElapsedMs;
+};
+
+void Timer::Start()
+{
+    mStart = std::chrono::high_resolution_clock::now();
+}
+
+double Timer::Stop()
+{
+    mEnd = std::chrono::high_resolution_clock::now();
+    mElapsedMs = mEnd - mStart;
+    return mElapsedMs.count();
+}
+} // anonymous namespace
+#pragma endregion {}
+
+//----------------------------------------
 #pragma region SatOrbit
 
 // Public Non-Virtual Interface
 std::unique_ptr<SatOrbit> SatOrbit::Make(SatOrbitKind inKind)
 {
     std::unique_ptr<SatOrbit> result = nullptr;
-    std::size_t coreCount = std::thread::hardware_concurrency();
+    const std::size_t coreCount = std::thread::hardware_concurrency();
 
     switch (inKind)
     {
@@ -378,37 +409,6 @@ void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVec
     OnPrintTrains(trainVector);
 }
 
-#pragma endregion {}
-
-//----------------------------------------
-#pragma region Timer
-
-
-class Timer
-{
-public:
-    Timer() = default;
-    void Start();
-    double Stop();
-
-private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
-    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd;
-    std::chrono::duration<double, std::milli> mElapsedMs;
-};
-
-void Timer::Start()
-{
-    mStart = std::chrono::high_resolution_clock::now();
-}
-
-double Timer::Stop()
-{
-    mEnd = std::chrono::high_resolution_clock::now();
-    mElapsedMs = mEnd - mStart;
-    return mElapsedMs.count();
-}
-} // anonymous namespace
 #pragma endregion {}
 
 //----------------------------------------

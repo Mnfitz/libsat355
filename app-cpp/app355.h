@@ -80,7 +80,6 @@ public:
 };
 #pragma endregion {}
 
-namespace {
 //--------------------------------------------------
 #pragma region class SatOrbit
 // abstract base class
@@ -120,8 +119,6 @@ private:
     virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
 };
 #pragma endregion {}
-
- } // anonymous namespace
 
 int main(int argc, char* argv[]);
 
