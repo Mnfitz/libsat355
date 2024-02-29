@@ -83,6 +83,8 @@ public:
 //--------------------------------------------------
 #pragma region class SatOrbit
 // abstract base class
+
+/// @brief SatOrbit acts as the API for calculating then sorting satellite orbits into groups or, trains"
 class SatOrbit
 {
 public:
@@ -95,13 +97,33 @@ public:
 
  // Interface
 public:
+    /// @brief SatOrbit is purely abstract, therefore use SatOrbit::Make() instead to create SatOrbit objects
     SatOrbit() = default;
+
+    /// @brief dtor is default, giving access to RO5 methods
     virtual ~SatOrbit() = default;
+
+    /// @brief Scans the inputted text file for satellite TLE data
+    /// @return Vector of all read TLE data
     std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
+
+    /// @brief Turns the raw TLE data into latitude, longitude, and altitude
+    /// @return Vector of computed orbital data
     std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
+
+    /// @brief Sorts the vector of orbital data by their mean motion
     void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
+
+    /// @brief Satellites in close proximity with a similar orbital path are grouped together, and solo satellites are discarded
+    /// @return Vector of all satellites which can be grouped into trains, where a train is a vector of satellites
     std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
+
+    /// @brief Prints all satellite data
     void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
+
+    /// @brief Creates a new SatOrbit object 
+    /// @param inKind Determines whether multithreading or singlethreading is utilized in computation
+    /// @return std::unique_ptr pointing to the newly created SatOrbit object
     static std::unique_ptr<SatOrbit> Make(SatOrbitKind inKind = SatOrbitKind::kDefault);
 
 // Types
