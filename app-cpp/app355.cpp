@@ -20,11 +20,11 @@ protected:
 // Implementation
 private:
     // SatOrbit
-    std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) override;
+    std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) override;
     void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
     void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
-    std::vector<std::vector<app355::OrbitalData>> OnCreateTrains(const std::vector<app355::OrbitalData>& orbitalVector) override;
-    void OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& trainVector) override;
+    std::vector<std::vector<app355::OrbitalData>> OnCreateTrains(const std::vector<app355::OrbitalData>& inOrbitalVector) override;
+    void OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& inTrainVector) override;
 };
 
 std::unique_ptr<SatOrbitSingle> SatOrbitSingle::Make()
@@ -81,16 +81,16 @@ void SatOrbitSingle::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrb
 }
 
 // Thread Independent
-std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int argc, char* argv[])
+std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int inArgc, char* inArgv[])
 {
-    if (argc < 2) 
+    if (inArgc < 2) 
     {
         std::cout << "Please provide a file path." << std::endl;
         const auto err = std::make_error_code(std::errc::invalid_argument);
         throw std::filesystem::filesystem_error("Path not given", err);
     }
 
-    std::filesystem::path filePath(argv[1]);
+    std::filesystem::path filePath(inArgv[1]);
 
     if (!std::filesystem::exists(filePath)) 
     {
@@ -129,7 +129,7 @@ std::vector<sat355::TLE> SatOrbitSingle::OnReadFromFile(int argc, char* argv[])
     return tleVector;
 }
 
-std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::vector<app355::OrbitalData>& orbitalVector)
+std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(const std::vector<app355::OrbitalData>& inOrbitalVector)
 {
     std::vector<std::vector<app355::OrbitalData>> trainVector;
     std::vector<app355::OrbitalData> newTrain;
@@ -137,7 +137,7 @@ std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(con
     double prevMeanMotion = 0;
     double prevInclination = 0;
 
-    std::for_each(orbitalVector.begin(), orbitalVector.end(), [&](auto& data)
+    std::for_each(inOrbitalVector.begin(), inOrbitalVector.end(), [&](auto& data)
     {
         double deltaMotion = abs(data.GetTLE().GetMeanMotion() - prevMeanMotion);
         double deltaInclination = abs(data.GetTLE().GetInclination() - prevInclination);
@@ -186,12 +186,12 @@ std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(con
     return trainVector;
 }
 
-void SatOrbitSingle::OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& trainVector)
+void SatOrbitSingle::OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& inTrainVector)
 {
     int trainCount = 0;
     // Print the contents of the train list
 
-    std::for_each(trainVector.begin(), trainVector.end(), [&](auto& train)
+    std::for_each(inTrainVector.begin(), inTrainVector.end(), [&](auto& train)
     {
         std::cout << "   TRAIN #" << trainCount << std::endl;
         std::cout << "   COUNT: " << train.size() << std::endl;
@@ -244,7 +244,7 @@ private:
     void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
 
     // SatOrbitMulti
-    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector);
+    virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleBegin, const tle_const_iterator& inTleEnd, OrbitalDataVector& ioDataVector);
     virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
     virtual void OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
 
@@ -272,12 +272,12 @@ void SatOrbitMulti::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbi
 }
 
 // SatOrbitMulti
-void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& tleBegin, const tle_const_iterator& tleEnd, OrbitalDataVector& ioDataVector)
+void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleBegin, const tle_const_iterator& inTleEnd, OrbitalDataVector& ioDataVector)
 {
-    const auto size = std::distance(tleBegin, tleEnd);
+    const auto size = std::distance(inTleBegin, inTleEnd);
     std::vector<app355::OrbitalData> orbitalVector{};
     orbitalVector.reserve(size);
-    std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
+    std::for_each(inTleBegin, inTleEnd, [&](const sat355::TLE& inTLE)
     {
         double out_tleage = 0.0;
         double out_latdegs = 0.0;
@@ -384,15 +384,15 @@ std::unique_ptr<SatOrbit> SatOrbit::Make(SatOrbitKind inKind)
     return result;
 }
 
-std::vector<sat355::TLE> SatOrbit::ReadFromFile(int argc, char* argv[])
+std::vector<sat355::TLE> SatOrbit::ReadFromFile(int inArgc, char* inArgv[])
 {
-    return OnReadFromFile(argc, argv);
+    return OnReadFromFile(inArgc, inArgv);
 }
 
-std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector)
+std::vector<OrbitalData> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& inTleVector)
 {
     OrbitalDataVector orbitalVector{};
-    OnCalculateOrbitalData(tleVector, orbitalVector);
+    OnCalculateOrbitalData(inTleVector, orbitalVector);
     return std::move(std::get<1>(orbitalVector));
 }
 
@@ -401,14 +401,14 @@ void SatOrbit::SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector)
     OnSortOrbitalVector(ioOrbitalVector);
 }
 
-std::vector<std::vector<OrbitalData>> SatOrbit::CreateTrains(const std::vector<OrbitalData>& orbitalVector)
+std::vector<std::vector<OrbitalData>> SatOrbit::CreateTrains(const std::vector<OrbitalData>& inOrbitalVector)
 {
-    return OnCreateTrains(orbitalVector);
+    return OnCreateTrains(inOrbitalVector);
 }
 
-void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector)
+void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& inTrainVector)
 {
-    OnPrintTrains(trainVector);
+    OnPrintTrains(inTrainVector);
 }
 
 #pragma endregion {}
@@ -417,7 +417,7 @@ void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVec
 
 //----------------------------------------
 // Main is the only function in global namespace
-int main(int argc, char* argv[])
+int main(int inArgc, char* inArgv[])
 {
     // measure total time in milliseconds using chrono 
     auto startTotal = std::chrono::high_resolution_clock::now();
@@ -431,7 +431,7 @@ int main(int argc, char* argv[])
     totalTimer.Start();
 
     timer.Start();
-    std::vector<sat355::TLE> tleVector{satOrbit->ReadFromFile(argc, argv)};
+    std::vector<sat355::TLE> tleVector{satOrbit->ReadFromFile(inArgc, inArgv)};
     std::cout << "Read from file: " << timer.Stop() << " ms" << std::endl;
 
     timer.Start();
