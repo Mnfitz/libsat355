@@ -91,6 +91,7 @@ public:
 class SatOrbit
 {
 public:
+    /// @brief Describes how SatOrbit will be computed; by using either the single-threaded or multi-threaded implementation
     enum class SatOrbitKind
     {
         kDefault = 0,
