@@ -100,34 +100,41 @@ public:
 
  // Interface
 public:
-    /// @brief SatOrbit is purely abstract, therefore use SatOrbit::Make() instead to create SatOrbit objects
-    SatOrbit() = default;
-
-    /// @brief dtor is default, giving access to RO5 methods
-    virtual ~SatOrbit() = default;
-
-    /// @brief Scans the inputted text file for satellite TLE data
-    /// @return Vector of all read TLE data
-    std::vector<sat355::TLE> ReadFromFile(int argc, char* argv[]);
-
-    /// @brief Turns the raw TLE data into latitude, longitude, and altitude
-    /// @return Vector of computed orbital data
-    std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& tleVector);
-
-    /// @brief Sorts the vector of orbital data by their mean motion
-    void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
-
-    /// @brief Satellites in close proximity with a similar orbital path are grouped together, and solo satellites are discarded
-    /// @return Vector of all satellites which can be grouped into trains, where a train is a vector of satellites
-    std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& orbitalVector);
-
-    /// @brief Prints all satellite data
-    void PrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector);
-
     /// @brief Creates a new SatOrbit object 
     /// @param inKind Determines whether multithreading or singlethreading is utilized in computation
     /// @return std::unique_ptr pointing to the newly created SatOrbit object
     static std::unique_ptr<SatOrbit> Make(SatOrbitKind inKind = SatOrbitKind::kDefault);
+
+    /// @brief Scans the inputted text file for satellite TLE data
+    /// @param inArgc The number of arguments passed into main()
+    /// @param inArgv A string pointing to the location of a text file containing satellite TLE data
+    /// @return Vector of all read TLE data
+    std::vector<sat355::TLE> ReadFromFile(int inArgc, char* inArgv[]);
+
+    /// @brief Turns the raw TLE data into latitude, longitude, and altitude
+    /// @param inTleVector Vector of parsed TLE data
+    /// @return Vector of computed orbital data
+    std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE>& inTleVector);
+
+    /// @brief Sorts the vector of orbital data by their mean motion
+    /// @param ioOrbitalVector Vector of unsorted orbital data
+    void SortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector);
+
+    /// @brief Satellites in close proximity with a similar orbital path are grouped together, and solo satellites are discarded
+    /// @param inOrbitalVector Vector of all sorted orbital data by which the train list is made from
+    /// @return Vector of all satellites which can be grouped into trains, where a train is a vector of satellites
+    std::vector<std::vector<OrbitalData>> CreateTrains(const std::vector<OrbitalData>& inOrbitalVector);
+
+    /// @brief Prints all satellite data
+    /// @param inTrainVector Vector of all satellite trains
+    void PrintTrains(const std::vector<std::vector<OrbitalData>>& inTrainVector);
+
+    /// @brief dtor is default, giving access to RO5 methods
+    virtual ~SatOrbit() = default;
+
+protected:
+    // Hidden because the class is abstract, and thus cannot be constructed on its own
+    SatOrbit() = default;
 
 // Types
 protected:
@@ -137,16 +144,16 @@ protected:
 // Implementation
 private:
     // SatOrbit
-    virtual std::vector<sat355::TLE> OnReadFromFile(int argc, char* argv[]) = 0;
+    virtual std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) = 0;
     virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) = 0;
     virtual void OnSortOrbitalVector(std::vector<OrbitalData>& ioOrbitalVector) = 0;
-    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& orbitalVector) = 0;
-    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& trainVector) = 0;
+    virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData>& inOrbitalVector) = 0;
+    virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>>& inTrainVector) = 0;
 };
 #pragma endregion {}
 } // namespace app355
 
 // Main is the only function in global namespace
-int main(int argc, char* argv[]);
+int main(int inArgc, char* inArgv[]);
 
 #endif // APP355_H
