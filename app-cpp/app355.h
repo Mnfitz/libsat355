@@ -38,8 +38,8 @@ private:
     double mMeanMotion;
 
 public:
-    OrbitalData(sat355::TLE inTLE, double latitude, double longitude, double altitude)
-        : mTLE{std::move(inTLE)}, mLatitude(latitude), mLongitude(longitude), mAltitude(altitude)
+    OrbitalData(sat355::TLE inTLE, double inLatitude, double inLongitude, double inAltitude)
+        : mTLE{std::move(inTLE)}, mLatitude(inLatitude), mLongitude(inLongitude), mAltitude(inAltitude)
     {
         mName = mTLE.GetName();
         mMeanMotion = mTLE.GetMeanMotion();
