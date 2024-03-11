@@ -1,3 +1,13 @@
+Design Patterns: Elements of Reusable Object-Oriented Software
+
+Gang of Four Authors:
+Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides
+
+Rule of 3 Creator:
+Marshall Cline 1991
+
+Boost is a set of free libraries written in 1999 in C++ which add functions that perform various math functions
+
 Creational Design Patterns
 
 Singleton	The singleton pattern restricts the initialization of a class to ensure that only one instance of the class can be created.
@@ -36,6 +46,7 @@ Top 5 Common Patterns:
 Provides a way to create objects with flexibility.
 Defines an interface for creating objects, but the actual creation is left to subclasses.
 Different subclasses can create objects of different types using the same method.
+SatOrbit's Make() method is a factory method.
 
 Example in C++:
 ```
@@ -99,6 +110,7 @@ int main() {
 2. Abstract Factory:
 Creates families of related or dependent objects.
 Provides an interface for creating families of products (e.g., different types of tables, chairs, and decorations).
+The difference between factory and abstract factory is that factory can only create one type, whereas abstract can make multiple types
 
 Example in C++:
 ```
