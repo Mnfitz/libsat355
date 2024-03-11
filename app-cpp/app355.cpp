@@ -268,7 +268,9 @@ void SatOrbitMulti::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLE
 void SatOrbitMulti::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector)
 {
     // Multithreaded sort
-    OnSortOrbitalVectorMulti(ioOrbitalVector.begin(), ioOrbitalVector.end());
+    auto begin = ioOrbitalVector.begin();
+    auto end = ioOrbitalVector.end();
+    OnSortOrbitalVectorMulti(begin, end);
 }
 
 // SatOrbitMulti
