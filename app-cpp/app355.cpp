@@ -38,7 +38,7 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
 {   
     auto tleBegin = inTLEVector.begin();
     auto tleEnd = inTLEVector.end();
-    const std::size_t size = static_cast<std::size_t>(std::distance(tleBegin, tleEnd));
+    const auto size = static_cast<std::size_t>(std::distance(tleBegin, tleEnd));
     std::vector<app355::OrbitalData> orbitalVector{};
     orbitalVector.reserve(size);
     std::for_each(tleBegin, tleEnd, [&](const sat355::TLE& inTLE)
@@ -177,6 +177,7 @@ std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(con
             if (deltaMotion < 0.001)
             {
                 trainVector[i].insert(trainVector[i].end(), trainVector[j].begin(), trainVector[j].end());
+                assert(static_cast<std::ptrdiff_t>(j) >= 0);
                 trainVector.erase(trainVector.begin() + static_cast<std::ptrdiff_t>(j));
                 --j;
             }
@@ -276,7 +277,7 @@ void SatOrbitMulti::OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbi
 // SatOrbitMulti
 void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleBegin, const tle_const_iterator& inTleEnd, OrbitalDataVector& ioDataVector)
 {
-    const std::size_t size = static_cast<std::size_t>(std::distance(inTleBegin, inTleEnd));
+    const auto size = static_cast<std::size_t>(std::distance(inTleBegin, inTleEnd));
     std::vector<app355::OrbitalData> orbitalVector{};
     orbitalVector.reserve(size);
     std::for_each(inTleBegin, inTleEnd, [&](const sat355::TLE& inTLE)
