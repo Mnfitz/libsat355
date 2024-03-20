@@ -1,2 +1,0 @@
-10>C:\Users\mn-fi\Projects\git\libsat355\tests\test1.cpp(36,27): warning C4996: 'gmtime': This function or variable may be unsafe. Consider using gmtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-10>C:\Users\mn-fi\Projects\git\libsat355\tests\test1.cpp(48,26): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
