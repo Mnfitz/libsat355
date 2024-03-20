@@ -29,7 +29,7 @@
         },
 
         {
-            "name": "Launch/Debug (GDB)", 
+            "name": "Launch/Debug (GDB)",
             "type": "cppdbg", // Use GDB or LLDB debugger 
             "request": "launch",
             

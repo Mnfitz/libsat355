@@ -13,7 +13,7 @@ if(WIN32)
 elseif(APPLE)
     # Settings common to both Mac and iOS
     set(LIBSAT355_LANGUAGES Swift CXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-c++98-compat -Wno-nonportable-include-path -Wno-unused-const-variable")
     set(SWIFT_FLAGS "${SWIFT_FLAGS}  -cxx-interoperability-mode=default --version")
     set(CMAKE_Swift_LANGUAGE_VERSION 5.9)
     if(IOS)
