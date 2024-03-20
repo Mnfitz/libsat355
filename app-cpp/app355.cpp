@@ -52,8 +52,8 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
         // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
         // get current time as a long long in seconds
         
-        //long long testTime = time(nullptr);
-        long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
+        long long testTime = time(nullptr);
+        //long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
 
         int result = orbit_to_lla(testTime, inTLE.GetName().data(), inTLE.GetLine1().data(), inTLE.GetLine2().data(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
@@ -150,7 +150,7 @@ std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(con
             });
 
             // Filter out wandering satellites
-            if (newTrain.size() > 2)
+            if (newTrain.size() > 3)
             {
                 trainVector.push_back(std::move(newTrain));
             }
@@ -291,8 +291,8 @@ void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleB
         // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
         // get current time as a long long in seconds
         
-        //long long testTime = time(nullptr);
-        long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
+        long long testTime = time(nullptr);
+        //long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
 
         int result = orbit_to_lla(testTime, inTLE.GetName().data(), inTLE.GetLine1().data(), inTLE.GetLine2().data(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
