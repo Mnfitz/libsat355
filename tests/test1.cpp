@@ -33,7 +33,8 @@ TEST(libsat355, TLE_GetInclination)
 TEST(libsat355, orbit_to_lla)
 {
     time_t epoch = 0; 
-    struct tm epoch_tm = *gmtime(&epoch);
+    struct tm epoch_tm{};
+    gmtime_s(&epoch_tm, &epoch);
     epoch = mktime(&epoch_tm);
 
 // Test for current time, or on 11:00 AM PST on 11/16/2023
@@ -45,7 +46,8 @@ TEST(libsat355, orbit_to_lla)
 #else
     // 11:00 AM PST on 11/16/2023
     time_t test = time(0);
-    struct tm test_tm = *localtime(&test);
+    struct tm test_tm{};
+    localtime_s(&test_tm, &test);
     test_tm.tm_year = 2023 - 1900;
     test_tm.tm_mon = 11 - 1;
     test_tm.tm_mday = 16;
