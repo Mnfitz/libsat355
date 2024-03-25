@@ -91,9 +91,13 @@ if(NOT APPLE)
     add_subdirectory(app-cpp)
     install(TARGETS app355-cpp DESTINATION out/app-cpp)
 else()
+    # Invoke the CMakeLists.txt build instructions for app355-cpp
+    add_subdirectory(app-cpp)
+    install(TARGETS app355-cpp DESTINATION out/app-cpp)
+
     # Invoke the CMakeLists.txt build instructions for app-swift 
-    add_subdirectory(app-swift)
-    install(TARGETS app355-swift DESTINATION out/app-swift)
+    #add_subdirectory(app-swift)
+    #install(TARGETS app355-swift DESTINATION out/app-swift)
 endif()
 
 # Tell cmake how to place the output executable in a tidy place a client can find it

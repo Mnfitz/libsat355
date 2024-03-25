@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <time.h>
+#include <ctime>
 
 #include "libsat355.h"
 
@@ -32,22 +32,20 @@ TEST(libsat355, TLE_GetInclination)
 
 TEST(libsat355, orbit_to_lla)
 {
-    time_t epoch = 0; 
-    struct tm epoch_tm{};
-    gmtime_s(&epoch_tm, &epoch);
-    epoch = mktime(&epoch_tm);
+    std::time_t epoch = 0; 
+    std::tm epoch_tm = *std::gmtime(&epoch);
+    epoch = std::mktime(&epoch_tm);
 
 // Test for current time, or on 11:00 AM PST on 11/16/2023
-#if 0
+#if 1
     // Current Time
-    time_t test = time(0);
-    struct tm test_tm = *localtime(&test);
-    test = mktime(&test_tm);
+    std::time_t test = std::time(0);
+    std::tm test_tm = *std::localtime(&test);
+    test = std::mktime(&test_tm);
 #else
     // 11:00 AM PST on 11/16/2023
-    time_t test = time(0);
-    struct tm test_tm{};
-    localtime_s(&test_tm, &test);
+    std::time_t test = std::time(0);
+    std::tm test_tm = localtime_s( &test);
     test_tm.tm_year = 2023 - 1900;
     test_tm.tm_mon = 11 - 1;
     test_tm.tm_mday = 16;
@@ -55,7 +53,7 @@ TEST(libsat355, orbit_to_lla)
     test_tm.tm_min = 0;
     test_tm.tm_sec = 0;
 
-    test = mktime(&test_tm);
+    test = std::mktime(&test_tm);
 
     // ISS (ZARYA) Coords
     // Lat: -51.0321
@@ -64,7 +62,7 @@ TEST(libsat355, orbit_to_lla)
 
 #endif
 
-    long long seconds = static_cast<long long>(difftime(test, epoch));
+    long long seconds = static_cast<long long>(std::difftime(test, epoch));
 
     /*
     ISS (ZARYA)             
@@ -79,7 +77,7 @@ TEST(libsat355, orbit_to_lla)
     double out_latdegs = 0.0;
     double out_londegs = 0.0;
     double out_altkm = 0.0;
-    //std::time_t inTime = time(nullptr);
+    //std::time_t inTime = std::time(nullptr);
 
     int result = orbit_to_lla(seconds, in_tle1, in_tle2, in_tle3, &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
     std::cout << "out_latdegs: " << out_latdegs << std::endl;
