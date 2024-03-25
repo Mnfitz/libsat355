@@ -22,7 +22,7 @@
             "request": "launch",
 
             "program": "${workspaceFolder}/lib/win-x64/unit_tests",
-            "args": [], // No Args
+            "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"],
             "cwd": "${workspaceFolder}/lib/win-x64",
             "stopAtEntry": false, // Set to true to stop program execution at the first line of code
             "preLaunchTask": "build", // tasks.json: {"label": "build"}
@@ -47,7 +47,7 @@
             },
             "linux": {
                 "program": "${workspaceFolder}/lib/ios/unit_tests",  
-                "args": [], 
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"],
                 "cwd": "${workspaceFolder}/lib/ios", 
                 "MIMode": "gdb"
             },
@@ -66,19 +66,19 @@
             
             "windows": {
                 "program": "${workspaceFolder}/lib/win-x64/unit_tests",  
-                "args": [], 
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"],
                 "cwd": "${workspaceFolder}/lib/win-x64", 
                 "MIMode": "gdb"
             },
             "osx": {
                 "program": "${workspaceFolder}/lib/macos/unit_tests",  
-                "args": [], 
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"],
                 "cwd": "${workspaceFolder}/lib/macos",
                 "MIMode": "lldb"
             },
             "linux": {
                 "program": "${workspaceFolder}/lib/ios/unit_tests",  
-                "args": [], 
+                "args": ["${workspaceFolder}/tests/StarlinkTLE.txt"],
                 "cwd": "${workspaceFolder}/lib/ios", 
                 "MIMode": "gdb"
             },
