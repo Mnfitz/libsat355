@@ -55,7 +55,7 @@
             
             //"args": [], // No Args
             //"cwd": "${workspaceFolder}/lib/win-x64", // Change this to the directory of your executable
-            "stopAtEntry": false, // Set to true to stop program execution at the first line of code
+            "stopAtEntry": true, // Set to true to stop program execution at the first line of code
             // MIMode indicates to VSCode which debugger should be used.
             // Can only be gdb or lldb.
         },

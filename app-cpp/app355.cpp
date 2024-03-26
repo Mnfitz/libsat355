@@ -456,11 +456,11 @@ int main(int inArgc, char* inArgv[])
     delete doompis;
     //delete doompis;
 
-#elif 0
+#elif 1
     // HACK mnfitz 25mar2024: sample bad code for testing undefined behavior sanitizer
     /*
     UndefinedBehaviorSanitizer is designed to catch various kinds of undefined behavior in C++ programs during execution:
-
+    
     Array Subscript Out of Bounds
     Bitwise Shifts Out of Bounds
     Dereferencing Misaligned or Null Pointers
@@ -470,6 +470,17 @@ int main(int inArgc, char* inArgv[])
     Invalid use of unsigned integers
     Division by zero
     */
+    int k = 0x7fffffff; // Maximum positive value for a signed int
+    k += 1;
+
+    //int y = 1 << 40;
+
+    //int* ptr = nullptr;
+    //*ptr = 42;
+
+    int z = INT_MAX;
+    float f = static_cast<float>(z);
+
 #elif 0
     /*
     ThreadSanitizer is designed to detect data race bugs in C/C++ programs:
