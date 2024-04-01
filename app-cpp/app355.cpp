@@ -502,6 +502,7 @@ int main(int inArgc, char* inArgv[])
     {
         app355::shared_ptr<app355::SatOrbit> shared2(satOrbit);
         app355::shared_ptr<app355::SatOrbit> shared3 = satOrbit;
+        app355::weak_ptr<app355::SatOrbit> shared4 = satOrbit;
     }
 
     // meaure time for each section in milliseconds using chrono

@@ -7,6 +7,7 @@
 namespace app355
 {
 
+// UNIQUE POINTER
 template<typename T>
 class unique_ptr
 {
@@ -74,6 +75,11 @@ public:
         return *get();
     }
 
+    operator bool() const
+    {
+        return (mData != nullptr);
+    }
+
     T* get()
     {
         return mData;
@@ -83,6 +89,7 @@ private:
     T* mData{};
 }; // class unique_ptr<T>
 
+// SHARED POINTER
 template<typename T>
 class shared_ptr
 {
@@ -112,13 +119,6 @@ public:
         mData = nullptr;
         mControl = nullptr;
     }
-
-    //T* release()
-    //{
-    //    T* data = mData;
-    //    mData = nullptr;
-    //    return data;
-    //}
 
     // RO5 Methods
     // Move Ctor
@@ -173,6 +173,11 @@ public:
         return *get();
     }
 
+    operator bool() const
+    {
+        return (mData != nullptr);
+    }
+
     T* get()
     {
         return mData;
@@ -188,6 +193,11 @@ private:
             // Do nothing
         }
 
+        T* get()
+        {
+            return mData;
+        }
+
         std::size_t IncrementStrong()
         {
             return ++mStrongCount;
@@ -198,15 +208,134 @@ private:
             return --mStrongCount;
         }
 
+        std::size_t IncrementWeak()
+        {
+            return ++mWeakCount;
+        }
+
+        std::size_t DecrementWeak()
+        {
+            return --mWeakCount;
+        }
+
     private:
         std::atomic<std::size_t> mStrongCount{1};
         std::atomic<std::size_t> mWeakCount{0};
         T* mData{}; // Used by weak pointers to obtain a new shared pointer
     }; // class ControlBlock
 
+private:
+    template<typename T>
+    friend class weak_ptr;
+    
 private: 
     T* mData{};
     ControlBlock* mControl{};
+}; // class shared_ptr<T>
+
+// WEAK POINTER
+template<typename T>
+class weak_ptr
+{
+public:
+    weak_ptr() = delete;
+
+    weak_ptr(shared_ptr<T>& inPtr) :
+        mControl{inPtr.mControl}
+    {
+        mControl->IncrementWeak();
+        // Note: ControlBlock::Ctor{} sets strong count to 1
+    }
+
+    ~weak_ptr()
+    {
+        reset();
+    };
+
+    void reset()
+    {
+        mControl = nullptr;
+    }
+
+    // RO5 Methods
+    // Shared Assign
+    weak_ptr& operator=(weak_ptr<T>& inShared)
+    {
+        // Copying to self should be a NOP
+        if (this != &inShared)
+        {
+            mControl = inShared.mControl;
+            mControl->IncrementWeak();
+        }
+        return *this;
+    }
+
+    // Move Ctor
+    weak_ptr(weak_ptr&& ioMove) :
+        mControl{ioMove.mControl}
+    {
+        ioMove.mControl = nullptr;
+    }
+
+    // Move Operand
+    weak_ptr& operator=(weak_ptr&& ioMove)
+    {
+        // Moving to self should be a NOP
+        if (this != &ioMove)
+        {
+            std::swap(mControl, ioMove.mControl);
+        }
+        return *this;
+    }
+
+    // Copy Ctor
+    weak_ptr(const weak_ptr& inCopy)
+    {
+        mControl = inCopy.mControl;
+        mControl->IncrementStrong();
+    }
+
+    // Copy Operand
+    weak_ptr& operator=(const weak_ptr& inCopy)
+    {
+        // Copying to self should be a NOP
+        if (this != &inCopy)
+        {
+            mData = inCopy.mData;
+            mControl = inCopy.mControl;
+            mControl->IncrementStrong();
+        }
+        return *this;
+    }
+
+    shared_ptr<T> lock()
+    {
+        return shared_ptr{mControl.mData}
+    }
+
+    operator bool() const
+    {
+        return (mControl != nullptr);
+    }
+
+    T* operator->()
+    {
+        return get();
+    }
+
+    T& operator*()
+    {
+        return *get();
+    }
+
+    T* get()
+    {
+        return mControl.get();
+    }
+
+private: 
+    // TRICKY: "Nested types" from a template class must be prefixed with the keyword 'typename'
+    typename shared_ptr<T>::ControlBlock* mControl{};
 }; // class shared_ptr<T>
 
 } // namespace app355
