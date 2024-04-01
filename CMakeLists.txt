@@ -13,9 +13,11 @@ if(WIN32)
 elseif(APPLE)
     # Settings common to both Mac and iOS
     set(LIBSAT355_LANGUAGES Swift CXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-nonportable-include-path -Wno-unused-const-variable")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wextra -Wpedantic -Wno-c++98-compat -Wno-nonportable-include-path -Wno-unused-const-variable -O1 -g -fno-omit-frame-pointer")
     set(SWIFT_FLAGS "${SWIFT_FLAGS}  -cxx-interoperability-mode=default --version")
     set(CMAKE_Swift_LANGUAGE_VERSION 5.9)
+    add_compile_options("-fsanitize=undefined")
+    link_libraries("-fsanitize=undefined")
     if(IOS)
         # ios-specific compile settings
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=8.0")
@@ -91,9 +93,13 @@ if(NOT APPLE)
     add_subdirectory(app-cpp)
     install(TARGETS app355-cpp DESTINATION out/app-cpp)
 else()
+    # Invoke the CMakeLists.txt build instructions for app355-cpp
+    add_subdirectory(app-cpp)
+    install(TARGETS app355-cpp DESTINATION out/app-cpp)
+
     # Invoke the CMakeLists.txt build instructions for app-swift 
-    add_subdirectory(app-swift)
-    install(TARGETS app355-swift DESTINATION out/app-swift)
+    #add_subdirectory(app-swift)
+    #install(TARGETS app355-swift DESTINATION out/app-swift)
 endif()
 
 # Tell cmake how to place the output executable in a tidy place a client can find it

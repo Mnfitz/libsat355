@@ -52,8 +52,8 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
         // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
         // get current time as a long long in seconds
         
-        //long long testTime = time(nullptr);
-        long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
+        long long testTime = time(nullptr);
+        //long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
 
         int result = orbit_to_lla(testTime, inTLE.GetName().data(), inTLE.GetLine1().data(), inTLE.GetLine2().data(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
@@ -150,7 +150,7 @@ std::vector<std::vector<app355::OrbitalData>> SatOrbitSingle::OnCreateTrains(con
             });
 
             // Filter out wandering satellites
-            if (newTrain.size() > 2)
+            if (newTrain.size() > 3)
             {
                 trainVector.push_back(std::move(newTrain));
             }
@@ -291,8 +291,8 @@ void SatOrbitMulti::OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleB
         // https://celestrak.org/NORAD/elements/gp.php?NAME=Starlink&FORMAT=TLE
         // get current time as a long long in seconds
         
-        //long long testTime = time(nullptr);
-        long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
+        long long testTime = time(nullptr);
+        //long long testTime = 1705781559; // Time TLEs stored in StarlinkTLE.txt were recorded
 
         int result = orbit_to_lla(testTime, inTLE.GetName().data(), inTLE.GetLine1().data(), inTLE.GetLine2().data(), &out_tleage, &out_latdegs, &out_londegs, &out_altkm);
         if (result == 0)
@@ -422,6 +422,76 @@ void SatOrbit::PrintTrains(const std::vector<std::vector<OrbitalData>>& inTrainV
 // Main is the only function in global namespace
 int main(int inArgc, char* inArgv[])
 {
+#if 0
+    // HACK mnfitz 25mar2024: sample bad code for testing address sanitizer
+    /*
+    AddressSanitizer is designed to detect various memory-related errors in C++ programs:
+    
+    Buffer Overflows 
+    Use-After-Free
+    Memory Leaks
+    Invalid Memory Access
+    Stack Buffer Overflows
+    Heap Buffer Overflows
+    Use of Uninitialized Variables
+    Double Free
+    Memory Access Alignment Issues
+    Global Buffer Overflows
+    */
+    char boompis[3] = { 1, 2, 3 };
+    boompis[3] = 52;
+
+    const char* name = "ISS(ZARYA)";
+    const char* line1 = "1 25544U 98067A   23320.50172660  .00012336  00000+0  22877-3 0  9990";
+    const char* line2 = "2 25544  51.6432 294.0998 0000823 293.3188 166.8114 15.49366195425413";
+
+    auto beempis = std::make_unique<sat355::TLE>(name, line1, line2);
+    beempis->GetName();
+    beempis.reset();
+    //beempis->GetName();
+
+    auto leempis = std::make_unique<sat355::TLE>(name, line1, line2);
+    auto doompis = leempis.release();
+    doompis->GetName();
+    delete doompis;
+    //delete doompis;
+
+#elif 1
+    // HACK mnfitz 25mar2024: sample bad code for testing undefined behavior sanitizer
+    /*
+    UndefinedBehaviorSanitizer is designed to catch various kinds of undefined behavior in C++ programs during execution:
+    
+    Array Subscript Out of Bounds
+    Bitwise Shifts Out of Bounds
+    Dereferencing Misaligned or Null Pointers
+    Signed Integer Overflow
+    Floating-Point Type Conversions That Overflow
+    Conversion to, from, or Between Floating-Point Types That Would Overflow
+    Invalid use of unsigned integers
+    Division by zero
+    */
+    int k = 0x7fffffff; // Maximum positive value for a signed int
+    k += 1;
+
+    //int y = 1 << 40;
+
+    //int* ptr = nullptr;
+    //*ptr = 42;
+
+    int z = INT_MAX;
+    float f = static_cast<float>(z);
+
+#elif 0
+    /*
+    ThreadSanitizer is designed to detect data race bugs in C/C++ programs:
+
+    Data Races: Data races occur when two threads access the same variable concurrently, 
+    and at least one of the accesses is a write. TSan detects these races, 
+    which are common and notoriously difficult to debug in concurrent systems. 
+    The C++11 standard officially considers data races as undefined behavior
+    */
+#endif
+
     // measure total time in milliseconds using chrono 
     auto startTotal = std::chrono::high_resolution_clock::now();
 
