@@ -114,7 +114,10 @@ public:
         if (mControl->DecrementStrong() <= 0)
         {
             delete mData;
-            delete mControl;
+            if (mControl->GetWeak() <= 0)
+            {
+                delete mControl;
+            }
         }
         mData = nullptr;
         mControl = nullptr;
@@ -192,10 +195,18 @@ private:
         {
             // Do nothing
         }
+        
+        //RO5 Methods added
+        ~ControlBlock() = default;
 
         T* get()
         {
             return mData;
+        }
+
+        std::size_t GetStrong()
+        {
+            return mStrongCount;
         }
 
         std::size_t IncrementStrong()
@@ -206,6 +217,11 @@ private:
         std::size_t DecrementStrong()
         {
             return --mStrongCount;
+        }
+
+        std::size_t GetWeak()
+        {
+            return mWeakCount;
         }
 
         std::size_t IncrementWeak()
@@ -227,6 +243,13 @@ private:
 private:
     template<typename T>
     friend class weak_ptr;
+
+    shared_ptr(ControlBlock& inBlock) :
+        mData{inBlock.mData},
+        mControl{inBlock}
+    {
+        
+    }
     
 private: 
     T* mData{};
@@ -238,12 +261,19 @@ template<typename T>
 class weak_ptr
 {
 public:
-    weak_ptr() = delete;
-
-    weak_ptr(shared_ptr<T>& inPtr) :
-        mControl{inPtr.mControl}
+    weak_ptr() :
+        mControl{nullptr}
     {
-        mControl->IncrementWeak();
+
+    }
+
+    weak_ptr(shared_ptr<T>& inPtr) 
+    {
+        if (inPtr)
+        {
+            mControl{inPtr.mControl}
+            mControl->IncrementWeak();
+        }
         // Note: ControlBlock::Ctor{} sets strong count to 1
     }
 
@@ -254,6 +284,10 @@ public:
 
     void reset()
     {
+        if ((mControl->DecrementWeak()) <= 0 && (mControl->GetStrong() <= 0))
+        {
+            delete mControl;
+        }
         mControl = nullptr;
     }
 
@@ -310,7 +344,8 @@ public:
 
     shared_ptr<T> lock()
     {
-        return shared_ptr{mControl.mData}
+
+        return shared_ptr{mControl}
     }
 
     operator bool() const
