@@ -7,371 +7,373 @@
 namespace app355
 {
 
-// UNIQUE POINTER
-template<typename T>
-class unique_ptr
-{
-public:
-    unique_ptr() = default;
-
-    unique_ptr(T* inData) :
-        mData{inData}
+    // UNIQUE POINTER
+    template <typename T>
+    class unique_ptr
     {
-        // Do Nothing
-    }
+    public:
+        unique_ptr() = default;
 
-    ~unique_ptr()
-    {
-        reset();
-    }
+        unique_ptr(T *inData) : mData{inData}
+        {
+            // Do Nothing
+        }
 
-    void reset()
-    {
-        // delete is smart enough to do nothing when passed nullptr
-        delete mData;
-        mData = nullptr;
-    }
+        ~unique_ptr()
+        {
+            reset();
+        }
 
-    T* release()
-    {
-        T* data = mData;
-        mData = nullptr;
-        return data;
-    }
+        void reset()
+        {
+            // delete is smart enough to do nothing when passed nullptr
+            delete mData;
+            mData = nullptr;
+        }
 
-    // RO5 Methods
-    // Move Ctor
-    unique_ptr(unique_ptr&& ioMove)
-    {
-        reset();
-        mData = ioMove.release();
-    }
+        T *release()
+        {
+            T *data = mData;
+            mData = nullptr;
+            return data;
+        }
 
-    // Move Operand
-    unique_ptr& operator=(unique_ptr&& ioMove)
-    {
-        // Moving to self should be a NOP
-        if (this != &ioMove)
+        // RO5 Methods
+        // Move Ctor
+        unique_ptr(unique_ptr &&ioMove)
         {
             reset();
             mData = ioMove.release();
         }
-        return *this;
-    }
 
-    // Unique has no Copy Ctor
-    unique_ptr(unique_ptr& inCopy) = delete;
-
-    // Unique has no Copy Operand
-    unique_ptr& operator=(unique_ptr& inCopy) = delete;
-
-    T* operator->()
-    {
-        return get();
-    }
-
-    T& operator*()
-    {
-        return *get();
-    }
-
-    operator bool() const
-    {
-        return (mData != nullptr);
-    }
-
-    T* get()
-    {
-        return mData;
-    }
-
-private: 
-    T* mData{};
-}; // class unique_ptr<T>
-
-// SHARED POINTER
-template<typename T>
-class shared_ptr
-{
-public:
-    shared_ptr() = default;
-
-    shared_ptr(T* inData) :
-        mData{inData},
-        mControl{new ControlBlock{inData}}
-    {
-        // Note: ControlBlock::Ctor{} sets strong count to 1
-    }
-
-    ~shared_ptr()
-    {
-        reset();
-    }
-
-    void reset()
-    {
-        // delete is smart enough to do nothing when passed nullptr
-        if (mControl->DecrementStrong() <= 0)
+        // Move Operand
+        unique_ptr &operator=(unique_ptr &&ioMove)
         {
-            delete mData;
-            if (mControl->GetWeak() <= 0)
+            // Moving to self should be a NOP
+            if (this != &ioMove)
             {
-                delete mControl;
+                reset();
+                mData = ioMove.release();
             }
+            return *this;
         }
-        mData = nullptr;
-        mControl = nullptr;
-    }
 
-    // RO5 Methods
-    // Move Ctor
-    shared_ptr(shared_ptr&& ioMove) :
-        mData{ioMove.mData},
-        mControl{ioMove.mControl}
-    {
-        ioMove.mData = nullptr;
-        ioMove.mControl = nullptr;
-    }
+        // Unique has no Copy Ctor
+        unique_ptr(unique_ptr &inCopy) = delete;
 
-    // Move Operand
-    shared_ptr& operator=(shared_ptr&& ioMove)
-    {
-        // Moving to self should be a NOP
-        if (this != &ioMove)
+        // Unique has no Copy Operand
+        unique_ptr &operator=(unique_ptr &inCopy) = delete;
+
+        T *operator->()
         {
-            std::swap(mData, ioMove.mData);
-            std::swap(mControl, ioMove.mControl);
+            return get();
         }
-        return *this;
-    }
 
-    // Copy Ctor
-    shared_ptr(const shared_ptr& inCopy)
-    {
-        mData = inCopy.mData;
-        mControl = inCopy.mControl;
-        mControl->IncrementStrong();
-    }
-
-    // Copy Operand
-    shared_ptr& operator=(const shared_ptr& inCopy)
-    {
-        // Copying to self should be a NOP
-        if (this != &inCopy)
+        T &operator*()
         {
-            mData = inCopy.mData;
-            mControl = inCopy.mControl;
-            mControl->IncrementStrong();
+            return *get();
         }
-        return *this;
-    }
 
-    T* operator->()
-    {
-        return get();
-    }
-
-    T& operator*()
-    {
-        return *get();
-    }
-
-    operator bool() const
-    {
-        return (mData != nullptr);
-    }
-
-    T* get()
-    {
-        return mData;
-    }
-
-private:
-    class ControlBlock
-    {
-    public:
-        ControlBlock(T* inData) :
-            mData{inData}
+        operator bool() const
         {
-            // Do nothing
+            return (mData != nullptr);
         }
-        
-        //RO5 Methods added
-        ~ControlBlock() = default;
 
-        T* get()
+        T *get()
         {
             return mData;
         }
 
-        std::size_t GetStrong()
-        {
-            return mStrongCount;
-        }
-
-        std::size_t IncrementStrong()
-        {
-            return ++mStrongCount;
-        }
-
-        std::size_t DecrementStrong()
-        {
-            return --mStrongCount;
-        }
-
-        std::size_t GetWeak()
-        {
-            return mWeakCount;
-        }
-
-        std::size_t IncrementWeak()
-        {
-            return ++mWeakCount;
-        }
-
-        std::size_t DecrementWeak()
-        {
-            return --mWeakCount;
-        }
-
     private:
-        std::atomic<std::size_t> mStrongCount{1};
-        std::atomic<std::size_t> mWeakCount{0};
-        T* mData{}; // Used by weak pointers to obtain a new shared pointer
-    }; // class ControlBlock
+        T *mData{};
+    }; // class unique_ptr<T>
 
-private:
-    template<typename T>
-    friend class weak_ptr;
-
-    shared_ptr(ControlBlock& inBlock) :
-        mData{inBlock.mData},
-        mControl{inBlock}
+    // SHARED POINTER
+    template <typename T>
+    class shared_ptr
     {
-        
-    }
-    
-private: 
-    T* mData{};
-    ControlBlock* mControl{};
-}; // class shared_ptr<T>
+    public:
+        shared_ptr() = default;
 
-// WEAK POINTER
-template<typename T>
-class weak_ptr
-{
-public:
-    weak_ptr() :
-        mControl{nullptr}
-    {
-
-    }
-
-    weak_ptr(shared_ptr<T>& inPtr) 
-    {
-        if (inPtr)
+        shared_ptr(T *inData) : mData{inData},
+                                mControl{new ControlBlock{inData}}
         {
-            mControl{inPtr.mControl}
-            mControl->IncrementWeak();
+            // Note: ControlBlock::Ctor{} sets strong count to 1
         }
-        // Note: ControlBlock::Ctor{} sets strong count to 1
-    }
 
-    ~weak_ptr()
-    {
-        reset();
-    };
-
-    void reset()
-    {
-        if ((mControl->DecrementWeak()) <= 0 && (mControl->GetStrong() <= 0))
+        ~shared_ptr()
         {
-            delete mControl;
+            reset();
         }
-        mControl = nullptr;
-    }
 
-    // RO5 Methods
-    // Shared Assign
-    weak_ptr& operator=(weak_ptr<T>& inShared)
-    {
-        // Copying to self should be a NOP
-        if (this != &inShared)
+        void reset()
         {
-            mControl = inShared.mControl;
-            mControl->IncrementWeak();
+            // delete is smart enough to do nothing when passed nullptr
+            if (mControl->DecrementStrong().first <= 0)
+            {
+                delete mData;
+                if (mControl->Get().second <= 0)
+                {
+                    delete mControl;
+                }
+            }
+            mData = nullptr;
+            mControl = nullptr;
         }
-        return *this;
-    }
 
-    // Move Ctor
-    weak_ptr(weak_ptr&& ioMove) :
-        mControl{ioMove.mControl}
-    {
-        ioMove.mControl = nullptr;
-    }
-
-    // Move Operand
-    weak_ptr& operator=(weak_ptr&& ioMove)
-    {
-        // Moving to self should be a NOP
-        if (this != &ioMove)
+        // RO5 Methods
+        // Move Ctor
+        shared_ptr(shared_ptr<T>&& ioMove) : mData{ioMove.mData},
+                                          mControl{ioMove.mControl}
         {
-            std::swap(mControl, ioMove.mControl);
+            ioMove.mData = nullptr;
+            ioMove.mControl = nullptr;
         }
-        return *this;
-    }
 
-    // Copy Ctor
-    weak_ptr(const weak_ptr& inCopy)
-    {
-        mControl = inCopy.mControl;
-        mControl->IncrementStrong();
-    }
+        // Move Operand
+        shared_ptr &operator=(shared_ptr<T>&& ioMove)
+        {
+            // Moving to self should be a NOP
+            if (this != &ioMove)
+            {
+                std::swap(mData, ioMove.mData);
+                std::swap(mControl, ioMove.mControl);
+            }
+            return *this;
+        }
 
-    // Copy Operand
-    weak_ptr& operator=(const weak_ptr& inCopy)
-    {
-        // Copying to self should be a NOP
-        if (this != &inCopy)
+        // Copy Ctor
+        shared_ptr(const shared_ptr &inCopy)
         {
             mData = inCopy.mData;
             mControl = inCopy.mControl;
             mControl->IncrementStrong();
         }
-        return *this;
-    }
 
-    shared_ptr<T> lock()
+        // Copy Operand
+        shared_ptr &operator=(const shared_ptr &inCopy)
+        {
+            // Copying to self should be a NOP
+            if (this != &inCopy)
+            {
+                mData = inCopy.mData;
+                mControl = inCopy.mControl;
+                mControl->IncrementStrong();
+            }
+            return *this;
+        }
+
+        T *operator->()
+        {
+            return get();
+        }
+
+        T &operator*()
+        {
+            return *get();
+        }
+
+        operator bool() const
+        {
+            return (mData != nullptr);
+        }
+
+        T *get()
+        {
+            return mData;
+        }
+
+    private:
+        class ControlBlock
+        {
+        public:
+            ControlBlock(T *inData) :  
+                 mData{inData}
+            {
+                // Do nothing
+            }
+
+            ControlBlock(shared_ptr<T>* inPtr) :
+                 mData{inPtr->mData}
+            {
+                // Do nothing
+            }
+
+            // RO5 Methods added
+            ~ControlBlock() = default;
+
+            T *get()
+            {
+                return mData;
+            }
+
+            std::pair<std::size_t, std::size_t> Get()
+            {
+                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, mWeakCount};
+                return refCounts;
+            }
+
+            std::pair<std::size_t, std::size_t> IncrementStrong()
+            {
+                std::pair<std::size_t, std::size_t> refCounts{++mStrongCount, mWeakCount};
+                return refCounts;
+            }
+
+            std::pair<std::size_t, std::size_t> DecrementStrong()
+            {
+                std::pair<std::size_t, std::size_t> refCounts{--mStrongCount, mWeakCount};
+                return refCounts;
+            }
+
+            std::pair<std::size_t, std::size_t> IncrementWeak()
+            {
+                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, ++mWeakCount};
+                return refCounts;
+            }
+
+            std::pair<std::size_t, std::size_t> DecrementWeak()
+            {
+                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, --mWeakCount};
+                return refCounts;
+            }
+
+        private:
+            std::atomic<std::size_t> mStrongCount{1};
+            std::atomic<std::size_t> mWeakCount{0};
+            T *mData{}; // Used by weak pointers to obtain a new shared pointer
+        };              // class ControlBlock
+
+    private:
+        template <typename T>
+        friend class weak_ptr;
+
+        shared_ptr(ControlBlock& inBlock) : 
+            mData{inBlock.mData},
+            mControl{inBlock}
+        {
+            
+        }
+
+    private:
+        T *mData{};
+        ControlBlock *mControl{};
+    }; // class shared_ptr<T>
+
+    // WEAK POINTER
+    template <typename T>
+    class weak_ptr
     {
+    public:
+        weak_ptr() : 
+            mControl{nullptr}
+        {
 
-        return shared_ptr{mControl}
-    }
+        }
 
-    operator bool() const
-    {
-        return (mControl != nullptr);
-    }
+        weak_ptr(shared_ptr<T>& inPtr)
+        {
+            if (inPtr)
+            {
+                mControl = inPtr.mControl;
+                mControl->IncrementWeak();
+            }
+            // Note: ControlBlock::Ctor{} sets strong count to 1
+        }
 
-    T* operator->()
-    {
-        return get();
-    }
+        ~weak_ptr()
+        {
+            reset();
+        };
 
-    T& operator*()
-    {
-        return *get();
-    }
+        void reset()
+        {
+            if ((mControl->DecrementWeak().second <= 0) && (mControl->Get().first <= 0))
+            {
+                delete mControl;
+            }
+            mControl = nullptr;
+        }
 
-    T* get()
-    {
-        return mControl.get();
-    }
+        // RO5 Methods
+        // Shared Assign
+        weak_ptr &operator=(shared_ptr<T>& inShared)
+        {
+            // Copying to self should be a NOP
+            if (this != &inShared)
+            {
+                mControl = inShared.mControl;
+                mControl->IncrementWeak();
+            }
+            return *this;
+        }
 
-private: 
-    // TRICKY: "Nested types" from a template class must be prefixed with the keyword 'typename'
-    typename shared_ptr<T>::ControlBlock* mControl{};
-}; // class shared_ptr<T>
+        // Move Ctor
+        weak_ptr(weak_ptr<T>&& ioMove) : mControl{ioMove.mControl}
+        {
+            ioMove.mControl = nullptr;
+        }
+
+        // Move Operand
+        weak_ptr &operator=(weak_ptr<T>&& ioMove)
+        {
+            // Moving to self should be a NOP
+            if (this != &ioMove)
+            {
+                std::swap(mControl, ioMove.mControl);
+            }
+            return *this;
+        }
+
+        // Copy Ctor
+        weak_ptr(const weak_ptr &inCopy)
+        {
+            mControl = inCopy.mControl;
+            mControl->IncrementStrong();
+        }
+
+        // Copy Operand
+        weak_ptr &operator=(const weak_ptr &inCopy)
+        {
+            // Copying to self should be a NOP
+            if (this != &inCopy)
+            {
+                mData = inCopy.mData;
+                mControl = inCopy.mControl;
+                mControl->IncrementStrong();
+            }
+            return *this;
+        }
+
+        shared_ptr<T> lock()
+        {
+
+            return shared_ptr { mControl }
+        }
+
+        operator bool() const
+        {
+            return (mControl != nullptr);
+        }
+
+        T *operator->()
+        {
+            return get();
+        }
+
+        T &operator*()
+        {
+            return *get();
+        }
+
+        T *get()
+        {
+            return mControl.get();
+        }
+
+    private:
+        // TRICKY: "Nested types" from a template class must be prefixed with the keyword 'typename'
+        typename shared_ptr<T>::ControlBlock *mControl{};
+    }; // class shared_ptr<T>
 
 } // namespace app355
 #endif // APP_PTR_H
