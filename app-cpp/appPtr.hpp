@@ -14,7 +14,7 @@ namespace app355
     public:
         unique_ptr() = default;
 
-        unique_ptr(T *inData) : mData{inData}
+        unique_ptr(T* inData) : mData{inData}
         {
             // Do Nothing
         }
@@ -31,23 +31,23 @@ namespace app355
             mData = nullptr;
         }
 
-        T *release()
+        T* release()
         {
-            T *data = mData;
+            T* data = mData;
             mData = nullptr;
             return data;
         }
 
         // RO5 Methods
         // Move Ctor
-        unique_ptr(unique_ptr &&ioMove)
+        unique_ptr(unique_ptr&& ioMove)
         {
             reset();
             mData = ioMove.release();
         }
 
         // Move Operand
-        unique_ptr &operator=(unique_ptr &&ioMove)
+        unique_ptr& operator=(unique_ptr&& ioMove)
         {
             // Moving to self should be a NOP
             if (this != &ioMove)
@@ -59,17 +59,17 @@ namespace app355
         }
 
         // Unique has no Copy Ctor
-        unique_ptr(unique_ptr &inCopy) = delete;
+        unique_ptr(unique_ptr& inCopy) = delete;
 
         // Unique has no Copy Operand
-        unique_ptr &operator=(unique_ptr &inCopy) = delete;
+        unique_ptr& operator=(unique_ptr& inCopy) = delete;
 
-        T *operator->()
+        T* operator->()
         {
             return get();
         }
 
-        T &operator*()
+        T& operator*()
         {
             return *get();
         }
@@ -79,13 +79,13 @@ namespace app355
             return (mData != nullptr);
         }
 
-        T *get()
+        T* get()
         {
             return mData;
         }
 
     private:
-        T *mData{};
+        T* mData{};
     }; // class unique_ptr<T>
 
     // SHARED POINTER
@@ -95,7 +95,7 @@ namespace app355
     public:
         shared_ptr() = default;
 
-        shared_ptr(T *inData) : mData{inData},
+        shared_ptr(T* inData) : mData{inData},
                                 mControl{new ControlBlock{inData}}
         {
             // Note: ControlBlock::Ctor{} sets strong count to 1
@@ -112,7 +112,7 @@ namespace app355
             if (mControl->DecrementStrong().first <= 0)
             {
                 delete mData;
-                if (mControl->Get().second <= 0)
+                if (mControl->GetRefCount().second <= 0)
                 {
                     delete mControl;
                 }
@@ -131,7 +131,7 @@ namespace app355
         }
 
         // Move Operand
-        shared_ptr &operator=(shared_ptr<T>&& ioMove)
+        shared_ptr& operator=(shared_ptr<T>&& ioMove)
         {
             // Moving to self should be a NOP
             if (this != &ioMove)
@@ -151,7 +151,7 @@ namespace app355
         }
 
         // Copy Operand
-        shared_ptr &operator=(const shared_ptr &inCopy)
+        shared_ptr& operator=(const shared_ptr &inCopy)
         {
             // Copying to self should be a NOP
             if (this != &inCopy)
@@ -163,12 +163,12 @@ namespace app355
             return *this;
         }
 
-        T *operator->()
+        T* operator->()
         {
             return get();
         }
 
-        T &operator*()
+        T& operator*()
         {
             return *get();
         }
@@ -178,7 +178,7 @@ namespace app355
             return (mData != nullptr);
         }
 
-        T *get()
+        T* get()
         {
             return mData;
         }
@@ -187,7 +187,7 @@ namespace app355
         class ControlBlock
         {
         public:
-            ControlBlock(T *inData) :  
+            ControlBlock(T* inData) :  
                  mData{inData}
             {
                 // Do nothing
@@ -202,14 +202,15 @@ namespace app355
             // RO5 Methods added
             ~ControlBlock() = default;
 
-            T *get()
+            T* get()
             {
                 return mData;
             }
 
-            std::pair<std::size_t, std::size_t> Get()
+            std::pair<std::size_t, std::size_t> GetRefCount()
             {
                 std::lock_guard<std::mutex> lock{mMutex};
+                
                 std::pair<std::size_t, std::size_t> refCounts{mStrongCount, mWeakCount};
                 return refCounts;
             }
@@ -246,23 +247,23 @@ namespace app355
             std::size_t mStrongCount{1};
             std::size_t mWeakCount{0};
             std::mutex mMutex{};
-            T *mData{}; // Used by weak pointers to obtain a new shared pointer
+            T* mData{}; // Used by weak pointers to obtain a new shared pointer
         };              // class ControlBlock
 
     private:
         template <typename T>
         friend class weak_ptr;
 
-        shared_ptr(ControlBlock& inBlock) : 
-            mData{inBlock.mData},
+        shared_ptr(ControlBlock* inBlock) : 
+            mData{inBlock->get()},
             mControl{inBlock}
         {
 
         }
 
     private:
-        T *mData{};
-        ControlBlock *mControl{};
+        T* mData{};
+        ControlBlock* mControl{};
     }; // class shared_ptr<T>
 
     // WEAK POINTER
@@ -293,7 +294,7 @@ namespace app355
 
         void reset()
         {
-            if ((mControl->DecrementWeak().second <= 0) && (mControl->Get().first <= 0))
+            if ((mControl->DecrementWeak().second <= 0) && (mControl->GetRefCount().first <= 0))
             {
                 delete mControl;
             }
@@ -302,7 +303,7 @@ namespace app355
 
         // RO5 Methods
         // Shared Assign
-        weak_ptr &operator=(shared_ptr<T>& inShared)
+        weak_ptr& operator=(shared_ptr<T>& inShared)
         {
             // Copying to self should be a NOP
             if (this != &inShared)
@@ -314,13 +315,13 @@ namespace app355
         }
 
         // Move Ctor
-        weak_ptr(weak_ptr<T>&& ioMove) : mControl{ioMove.mControl}
+        weak_ptr (weak_ptr<T>&& ioMove) : mControl{ioMove.mControl}
         {
             ioMove.mControl = nullptr;
         }
 
         // Move Operand
-        weak_ptr &operator=(weak_ptr<T>&& ioMove)
+        weak_ptr& operator=(weak_ptr<T>&& ioMove)
         {
             // Moving to self should be a NOP
             if (this != &ioMove)
@@ -331,14 +332,14 @@ namespace app355
         }
 
         // Copy Ctor
-        weak_ptr(const weak_ptr &inCopy)
+        weak_ptr (const weak_ptr &inCopy)
         {
             mControl = inCopy.mControl;
             mControl->IncrementStrong();
         }
 
         // Copy Operand
-        weak_ptr &operator=(const weak_ptr &inCopy)
+        weak_ptr& operator=(const weak_ptr &inCopy)
         {
             // Copying to self should be a NOP
             if (this != &inCopy)
@@ -352,8 +353,8 @@ namespace app355
 
         shared_ptr<T> lock()
         {
-
-            return shared_ptr { mControl }
+            shared_ptr<T> lockedPtr(mControl);
+            return lockedPtr;
         }
 
         operator bool() const
@@ -361,24 +362,24 @@ namespace app355
             return (mControl != nullptr);
         }
 
-        T *operator->()
+        T* operator->()
         {
             return get();
         }
 
-        T &operator*()
+        T& operator*()
         {
             return *get();
         }
 
-        T *get()
+        T* get()
         {
             return mControl.get();
         }
 
     private:
         // TRICKY: "Nested types" from a template class must be prefixed with the keyword 'typename'
-        typename shared_ptr<T>::ControlBlock *mControl{};
+        typename shared_ptr<T>::ControlBlock* mControl{};
     }; // class shared_ptr<T>
 
 } // namespace app355

@@ -496,14 +496,13 @@ int main(int inArgc, char* inArgv[])
     auto startTotal = std::chrono::high_resolution_clock::now();
 
     // 4 threads is baseline
-    auto stdPtr = app355::SatOrbit::Make(app355::SatOrbit::SatOrbitKind::kMulti);
-    app355::unique_ptr<app355::SatOrbit> satOrbit2(stdPtr.release());
-    app355::shared_ptr<app355::SatOrbit> satOrbit(satOrbit2.release());
-    {
-        app355::shared_ptr<app355::SatOrbit> shared2(satOrbit);
-        app355::shared_ptr<app355::SatOrbit> shared3 = satOrbit;
-        app355::weak_ptr<app355::SatOrbit> shared4(satOrbit);
-    }
+    auto satOrbit0 = app355::SatOrbit::Make(app355::SatOrbit::SatOrbitKind::kMulti);
+    app355::shared_ptr<app355::SatOrbit> satOrbit = satOrbit0.release();
+    app355::shared_ptr<app355::SatOrbit> satOrbit1 = satOrbit;
+    app355::weak_ptr<app355::SatOrbit> satOrbit2 = satOrbit1;
+    satOrbit1.reset();
+    app355::shared_ptr<app355::SatOrbit> out = satOrbit2.lock();
+
 
     // meaure time for each section in milliseconds using chrono
     Timer totalTimer{};
