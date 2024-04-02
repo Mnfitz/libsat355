@@ -209,37 +209,43 @@ namespace app355
 
             std::pair<std::size_t, std::size_t> Get()
             {
+                std::lock_guard<std::mutex> lock{mMutex};
                 std::pair<std::size_t, std::size_t> refCounts{mStrongCount, mWeakCount};
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> IncrementStrong()
             {
+                std::lock_guard<std::mutex> lock{mMutex};
                 std::pair<std::size_t, std::size_t> refCounts{++mStrongCount, mWeakCount};
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> DecrementStrong()
             {
+                std::lock_guard<std::mutex> lock{mMutex};
                 std::pair<std::size_t, std::size_t> refCounts{--mStrongCount, mWeakCount};
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> IncrementWeak()
             {
+                std::lock_guard<std::mutex> lock{mMutex};
                 std::pair<std::size_t, std::size_t> refCounts{mStrongCount, ++mWeakCount};
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> DecrementWeak()
             {
+                std::lock_guard<std::mutex> lock{mMutex};
                 std::pair<std::size_t, std::size_t> refCounts{mStrongCount, --mWeakCount};
                 return refCounts;
             }
 
         private:
-            std::atomic<std::size_t> mStrongCount{1};
-            std::atomic<std::size_t> mWeakCount{0};
+            std::size_t mStrongCount{1};
+            std::size_t mWeakCount{0};
+            std::mutex mMutex{};
             T *mData{}; // Used by weak pointers to obtain a new shared pointer
         };              // class ControlBlock
 
@@ -251,7 +257,7 @@ namespace app355
             mData{inBlock.mData},
             mControl{inBlock}
         {
-            
+
         }
 
     private:
