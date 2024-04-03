@@ -95,8 +95,9 @@ namespace app355
     public:
         shared_ptr() = default;
 
-        shared_ptr(T* inData) : mData{inData},
-                                mControl{new ControlBlock{inData}}
+        shared_ptr(T* inData) :
+            mData{inData},
+            mControl{new ControlBlock{inData}}
         {
             // Note: ControlBlock::Ctor{} sets strong count to 1
         }
@@ -109,12 +110,15 @@ namespace app355
         void reset()
         {
             // delete is smart enough to do nothing when passed nullptr
-            if (mControl->DecrementStrong().first <= 0)
+            if (mData != nullptr && mControl != nullptr)
             {
-                delete mData;
-                if (mControl->GetRefCount().second <= 0)
+                if (mControl->DecrementStrong().first <= 0)
                 {
-                    delete mControl;
+                    delete mData;
+                    if (mControl->GetRefCount().second <= 0)
+                    {
+                        delete mControl;
+                    }
                 }
             }
             mData = nullptr;
@@ -123,8 +127,9 @@ namespace app355
 
         // RO5 Methods
         // Move Ctor
-        shared_ptr(shared_ptr<T>&& ioMove) : mData{ioMove.mData},
-                                          mControl{ioMove.mControl}
+        shared_ptr(shared_ptr<T>&& ioMove) : 
+            mData{ioMove.mData},
+            mControl{ioMove.mControl}
         {
             ioMove.mData = nullptr;
             ioMove.mControl = nullptr;
@@ -244,7 +249,7 @@ namespace app355
             }
 
         private:
-            std::size_t mStrongCount{1};
+            std::size_t mStrongCount{1}; // Default constructs with initial refcount of 1
             std::size_t mWeakCount{0};
             std::mutex mMutex{};
             T* mData{}; // Used by weak pointers to obtain a new shared pointer
@@ -258,7 +263,7 @@ namespace app355
             mData{inBlock->get()},
             mControl{inBlock}
         {
-
+            mControl->IncrementStrong();
         }
 
     private:
@@ -294,9 +299,12 @@ namespace app355
 
         void reset()
         {
-            if ((mControl->DecrementWeak().second <= 0) && (mControl->GetRefCount().first <= 0))
+            if (mControl != nullptr)
             {
-                delete mControl;
+                if ((mControl->DecrementWeak().second <= 0) && (mControl->GetRefCount().first <= 0))
+                {
+                    delete mControl;
+                }
             }
             mControl = nullptr;
         }
