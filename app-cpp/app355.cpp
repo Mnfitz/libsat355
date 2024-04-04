@@ -456,7 +456,7 @@ int main(int inArgc, char* inArgv[])
     delete doompis;
     //delete doompis;
 
-#elif 1
+#elif 0
     // HACK mnfitz 25mar2024: sample bad code for testing undefined behavior sanitizer
     /*
     UndefinedBehaviorSanitizer is designed to catch various kinds of undefined behavior in C++ programs during execution:
