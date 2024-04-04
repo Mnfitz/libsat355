@@ -3,18 +3,21 @@
 
 // std
 #include <atomic>
+#include <utility>
 
 namespace app355
 {
 
     // UNIQUE POINTER
-    template <typename T>
+    template<typename T>
     class unique_ptr
     {
     public:
         unique_ptr() = default;
 
-        unique_ptr(T* inData) : mData{inData}
+        unique_ptr(T* inData) : 
+            //Beware: ControlBlock default initializes mStrongCount to 1
+            mData{inData}
         {
             // Do Nothing
         }
@@ -88,8 +91,18 @@ namespace app355
         T* mData{};
     }; // class unique_ptr<T>
 
+    // TRICKY: Variatic template arguments 
+    // Template that takes any number and type of arguments
+    template<typename T, typename ...Args>
+    unique_ptr<T> make_unique(Args... inArgs)
+    {
+        T* data = new T{std::forward<Args>(inArgs)...};
+        unique_ptr<T> unique{data};
+        return unique;
+    }
+
     // SHARED POINTER
-    template <typename T>
+    template<typename T>
     class shared_ptr
     {
     public:
@@ -109,13 +122,18 @@ namespace app355
 
         void reset()
         {
-            // delete is smart enough to do nothing when passed nullptr
-            if (mData != nullptr && mControl != nullptr)
+            // Cannot check the count if mControl no longer exists
+            if (mControl != nullptr)
             {
-                if (mControl->DecrementStrong().first <= 0)
+                auto [strong, weak] = mControl->DecrementStrong();
+                if (strong <= 0)
                 {
-                    delete mData;
-                    if (mControl->GetRefCount().second <= 0)
+                    if (mData != nullptr)
+                    {
+                        delete mData;
+                    }
+
+                    if (weak <= 0)
                     {
                         delete mControl;
                     }
@@ -127,7 +145,7 @@ namespace app355
 
         // RO5 Methods
         // Move Ctor
-        shared_ptr(shared_ptr<T>&& ioMove) : 
+        shared_ptr(shared_ptr&& ioMove) : 
             mData{ioMove.mData},
             mControl{ioMove.mControl}
         {
@@ -136,7 +154,7 @@ namespace app355
         }
 
         // Move Operand
-        shared_ptr& operator=(shared_ptr<T>&& ioMove)
+        shared_ptr& operator=(shared_ptr&& ioMove)
         {
             // Moving to self should be a NOP
             if (this != &ioMove)
@@ -148,7 +166,7 @@ namespace app355
         }
 
         // Copy Ctor
-        shared_ptr(const shared_ptr &inCopy)
+        shared_ptr(const shared_ptr& inCopy)
         {
             mData = inCopy.mData;
             mControl = inCopy.mControl;
@@ -156,7 +174,7 @@ namespace app355
         }
 
         // Copy Operand
-        shared_ptr& operator=(const shared_ptr &inCopy)
+        shared_ptr& operator=(const shared_ptr& inCopy)
         {
             // Copying to self should be a NOP
             if (this != &inCopy)
@@ -198,12 +216,6 @@ namespace app355
                 // Do nothing
             }
 
-            ControlBlock(shared_ptr<T>* inPtr) :
-                 mData{inPtr->mData}
-            {
-                // Do nothing
-            }
-
             // RO5 Methods added
             ~ControlBlock() = default;
 
@@ -212,39 +224,31 @@ namespace app355
                 return mData;
             }
 
-            std::pair<std::size_t, std::size_t> GetRefCount()
-            {
-                std::lock_guard<std::mutex> lock{mMutex};
-                
-                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, mWeakCount};
-                return refCounts;
-            }
-
             std::pair<std::size_t, std::size_t> IncrementStrong()
             {
                 std::lock_guard<std::mutex> lock{mMutex};
-                std::pair<std::size_t, std::size_t> refCounts{++mStrongCount, mWeakCount};
+                auto refCounts = std::make_pair(++mStrongCount, mWeakCount);
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> DecrementStrong()
             {
                 std::lock_guard<std::mutex> lock{mMutex};
-                std::pair<std::size_t, std::size_t> refCounts{--mStrongCount, mWeakCount};
+                auto refCounts = std::make_pair(--mStrongCount, mWeakCount);
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> IncrementWeak()
             {
                 std::lock_guard<std::mutex> lock{mMutex};
-                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, ++mWeakCount};
+                auto refCounts = std::make_pair(mStrongCount, ++mWeakCount);
                 return refCounts;
             }
 
             std::pair<std::size_t, std::size_t> DecrementWeak()
             {
                 std::lock_guard<std::mutex> lock{mMutex};
-                std::pair<std::size_t, std::size_t> refCounts{mStrongCount, --mWeakCount};
+                auto refCounts = std::make_pair(mStrongCount, --mWeakCount);
                 return refCounts;
             }
 
@@ -259,10 +263,10 @@ namespace app355
         template <typename T>
         friend class weak_ptr;
 
-        shared_ptr(ControlBlock* inBlock) : 
-            mData{inBlock->get()},
-            mControl{inBlock}
+        shared_ptr(ControlBlock* inBlock)
         {
+            mData = inBlock->get();
+            mControl = inBlock;
             mControl->IncrementStrong();
         }
 
@@ -270,6 +274,16 @@ namespace app355
         T* mData{};
         ControlBlock* mControl{};
     }; // class shared_ptr<T>
+
+    // TRICKY: Variatic template arguments 
+    // Template that takes any number and type of arguments
+    template<typename T, typename ...Args>
+    shared_ptr<T> make_unique(Args... inArgs)
+    {
+        T* data = new T{std::forward<Args>(inArgs)...};
+        shared_ptr<T> unique{data};
+        return unique;
+    }
 
     // WEAK POINTER
     template <typename T>
@@ -301,9 +315,14 @@ namespace app355
         {
             if (mControl != nullptr)
             {
-                if ((mControl->DecrementWeak().second <= 0) && (mControl->GetRefCount().first <= 0))
+                auto [strong, weak] = mControl->DecrementWeak();
+                if (strong <= 0)
                 {
-                    delete mControl;
+                    // delete data not available for weak_ptr
+                    if (weak <= 0)
+                    {
+                        delete mControl;
+                    }
                 }
             }
             mControl = nullptr;
@@ -323,13 +342,13 @@ namespace app355
         }
 
         // Move Ctor
-        weak_ptr (weak_ptr<T>&& ioMove) : mControl{ioMove.mControl}
+        weak_ptr (weak_ptr&& ioMove)
         {
-            ioMove.mControl = nullptr;
+            std::swap(mControl, ioMove.mControl);
         }
 
         // Move Operand
-        weak_ptr& operator=(weak_ptr<T>&& ioMove)
+        weak_ptr& operator=(weak_ptr&& ioMove)
         {
             // Moving to self should be a NOP
             if (this != &ioMove)
@@ -340,14 +359,14 @@ namespace app355
         }
 
         // Copy Ctor
-        weak_ptr (const weak_ptr &inCopy)
+        weak_ptr (const weak_ptr& inCopy)
         {
             mControl = inCopy.mControl;
             mControl->IncrementStrong();
         }
 
         // Copy Operand
-        weak_ptr& operator=(const weak_ptr &inCopy)
+        weak_ptr& operator=(const weak_ptr& inCopy)
         {
             // Copying to self should be a NOP
             if (this != &inCopy)
@@ -361,7 +380,7 @@ namespace app355
 
         shared_ptr<T> lock()
         {
-            shared_ptr<T> lockedPtr(mControl);
+            shared_ptr<T> lockedPtr{mControl};
             return lockedPtr;
         }
 
