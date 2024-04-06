@@ -112,7 +112,7 @@ namespace app355
         /// @param inArgc The number of arguments passed into main()
         /// @param inArgv A string pointing to the location of a text file containing satellite TLE data
         /// @return Vector of all read TLE data
-        std::vector<sat355::TLE> ReadFromFile(int inArgc, char *inArgv[]);
+        std::vector<sat355::TLE> ReadFromFile(int inArgc, char* inArgv[]);
 
         /// @brief Turns the raw TLE data into latitude, longitude, and altitude
         /// @param inTleVector Vector of parsed TLE data
@@ -147,7 +147,7 @@ namespace app355
         // Implementation
     private:
         // SatOrbit
-        virtual std::vector<sat355::TLE> OnReadFromFile(int inArgc, char *inArgv[]) = 0;
+        virtual std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) = 0;
         virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE> &inTLEVector, OrbitalDataVector &ioDataVector) = 0;
         virtual void OnSortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector) = 0;
         virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData> &inOrbitalVector) = 0;
@@ -157,6 +157,6 @@ namespace app355
 } // namespace app355
 
 // Main is the only function in global namespace
-int main(int inArgc, char *inArgv[]);
+int main(int inArgc, char* inArgv[]);
 
 #endif // APP355_H

@@ -91,7 +91,7 @@ double cTle::GetField(eField   fld,
    if (pstr)
    {
       // Return requested field in string form.
-      *pstr = m_Field[fld];
+      *pstr = m_Field->at(fld);
       
       if (bStrUnits)
       {

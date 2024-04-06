@@ -7,7 +7,10 @@
 
 namespace app355 {
 
-// UNIQUE POINTER
+#pragma region unique_ptr
+
+/// @brief std::unique_ptr is a smart pointer that owns and manages a single object through 
+/// a pointer and disposes of that object when the unique_ptr goes out of scope.
 template<typename T>
 class unique_ptr
 {
@@ -33,7 +36,7 @@ private:
     T* mData{};
 }; // class unique_ptr<T>
 
-#pragma region unique_ptr
+// Inlines
 
 template<typename T>
 inline unique_ptr<T>::unique_ptr(T* inData) : 
@@ -107,8 +110,6 @@ inline T* unique_ptr<T>::get()
 {
     return mData;
 }
-#pragma endregion // unique_ptr
-
 
 // TRICKY: Variatic template arguments 
 // Template that takes any number and type of arguments
@@ -119,6 +120,8 @@ unique_ptr<T> make_unique(Args... inArgs)
     unique_ptr<T> unique{data};
     return unique;
 }
+
+#pragma endregion // unique_ptr
 
 //
 /////////////////////////////////////////////////////////////////////////////////
@@ -168,22 +171,28 @@ public:
 
     // RO5 Methods
     // Move Ctor
-    shared_ptr(shared_ptr&& ioMove) : 
-        mData{ioMove.mData},
-        mControl{ioMove.mControl}
+    shared_ptr(shared_ptr&& ioMove) noexcept
     {
-        ioMove.mData = nullptr;
-        ioMove.mControl = nullptr;
+        if (ioMove)
+        {
+            std::swap(mData, ioMove.mData);
+            std::swap(mControl, ioMove.mControl);
+        }
     }
 
     // Move Operand
-    shared_ptr& operator=(shared_ptr&& ioMove)
+    shared_ptr& operator=(shared_ptr&& ioMove) noexcept
     {
         // Moving to self should be a NOP
         if (this != &ioMove)
         {
-            std::swap(mData, ioMove.mData);
-            std::swap(mControl, ioMove.mControl);
+            // Reset/delete the old value which was moved
+            //reset(); // noexcept requires us to leave as a turd
+            if (ioMove)
+            {
+                std::swap(mData, ioMove.mData);
+                std::swap(mControl, ioMove.mControl);
+            }
         }
         return *this;
     }
@@ -191,9 +200,12 @@ public:
     // Copy Ctor
     shared_ptr(const shared_ptr& inCopy)
     {
-        mData = inCopy.mData;
-        mControl = inCopy.mControl;
-        mControl->IncrementStrong();
+        if (inCopy)
+        {
+            inCopy.mControl->IncrementStrong();
+            mData = inCopy.mData;
+            mControl = inCopy.mControl;
+        }
     }
 
     // Copy Operand
@@ -202,9 +214,14 @@ public:
         // Copying to self should be a NOP
         if (this != &inCopy)
         {
-            mData = inCopy.mData;
-            mControl = inCopy.mControl;
-            mControl->IncrementStrong();
+            reset();
+
+            if (inCopy)
+            {
+                inCopy.mControl->IncrementStrong();
+                mData = inCopy.mData;
+                mControl = inCopy.mControl;
+            }
         }
         return *this;
     }
@@ -234,7 +251,7 @@ private:
     {
     public:
         ControlBlock(T* inData) :  
-                mData{inData}
+            mData{inData}
         {
             // Do nothing
         }
@@ -242,37 +259,49 @@ private:
         // RO5 Methods added
         ~ControlBlock() = default;
 
-        T* get()
-        {
-            return mData;
-        }
+        // Copying should not be done, because we use a std::mutex
+        ControlBlock(const ControlBlock& inCopy) = delete;
+        ControlBlock& operator=(const ControlBlock& inCopy) = delete;
 
         std::pair<std::size_t, std::size_t> IncrementStrong()
         {
             std::lock_guard<std::mutex> lock{mMutex};
-            auto refCounts = std::make_pair(++mStrongCount, mWeakCount);
-            return refCounts;
+            const bool hasDataBeenDeleted = (mStrongCount <= 0);
+            if (!hasDataBeenDeleted)
+            {
+                ++mStrongCount;
+            }
+            return {mStrongCount, mWeakCount};
         }
 
         std::pair<std::size_t, std::size_t> DecrementStrong()
         {
             std::lock_guard<std::mutex> lock{mMutex};
-            auto refCounts = std::make_pair(--mStrongCount, mWeakCount);
-            return refCounts;
+            // StrongCount is not allowed to change once it reaches 0 and must be deleted
+            assert((mStrongCount > 0) && "Cannot decrement below zero");
+            --mStrongCount;
+            return {mStrongCount, mWeakCount};
         }
 
         std::pair<std::size_t, std::size_t> IncrementWeak()
         {
             std::lock_guard<std::mutex> lock{mMutex};
-            auto refCounts = std::make_pair(mStrongCount, ++mWeakCount);
-            return refCounts;
+            ++mWeakCount;
+            return {mStrongCount, mWeakCount};
         }
 
         std::pair<std::size_t, std::size_t> DecrementWeak()
         {
             std::lock_guard<std::mutex> lock{mMutex};
-            auto refCounts = std::make_pair(mStrongCount, --mWeakCount);
-            return refCounts;
+            // StrongCount is not allowed to change once it reaches 0 and must be deleted
+            assert((mWeakCount > 0) && "Cannot decrement below zero");
+            --mWeakCount;
+            return {mStrongCount, mWeakCount};
+        }
+
+        T* get()
+        {
+            return mData;
         }
 
     private:
@@ -280,7 +309,7 @@ private:
         std::size_t mWeakCount{0};
         std::mutex mMutex{};
         T* mData{}; // Used by weak pointers to obtain a new shared pointer
-    };              // class ControlBlock
+    }; // class ControlBlock
 
 private:
     template <typename T>
@@ -288,9 +317,12 @@ private:
 
     shared_ptr(ControlBlock* inBlock)
     {
-        mData = inBlock->get();
-        mControl = inBlock;
-        mControl->IncrementStrong();
+        if (inBlock != nullptr)
+        {
+            inBlock->IncrementStrong();
+            mData = inBlock->get();
+            mControl = inBlock;
+        }
     }
 
 private:
@@ -323,8 +355,8 @@ public:
     {
         if (inPtr)
         {
+            inPtr.mControl->IncrementWeak();
             mControl = inPtr.mControl;
-            mControl->IncrementWeak();
         }
         // Note: ControlBlock::Ctor{} sets strong count to 1
     }
@@ -339,53 +371,62 @@ public:
         if (mControl != nullptr)
         {
             auto [strong, weak] = mControl->DecrementWeak();
-            if (strong <= 0)
+            if (weak <= 0 && strong <= 0)
             {
                 // delete data not available for weak_ptr
-                if (weak <= 0)
-                {
-                    delete mControl;
-                }
+                delete mControl;
             }
         }
         mControl = nullptr;
     }
 
-    // RO5 Methods
-    // Shared Assign
+    // Alt Assign Operator
     weak_ptr& operator=(shared_ptr<T>& inShared)
     {
         // Copying to self should be a NOP
-        if (this != &inShared)
+        if (inShared.mControl != nullptr)
         {
+            // bump weak refcount
+            inShared.mControl->IncrementWeak();
             mControl = inShared.mControl;
-            mControl->IncrementWeak();
         }
         return *this;
     }
 
+    // RO5 Methods
     // Move Ctor
-    weak_ptr (weak_ptr&& ioMove)
+    weak_ptr(weak_ptr&& ioMove) noexcept
     {
-        std::swap(mControl, ioMove.mControl);
+        if (ioMove)
+        {
+            // swap allows for noexcept move ctor
+            std::swap(mControl, ioMove.mControl);
+        }
     }
 
     // Move Operand
-    weak_ptr& operator=(weak_ptr&& ioMove)
+    weak_ptr& operator=(weak_ptr&& ioMove) noexcept
     {
-        // Moving to self should be a NOP
+         // Moving to self should be a NOP
         if (this != &ioMove)
         {
-            std::swap(mControl, ioMove.mControl);
+            if (ioMove)
+            {
+                // swap allows for noexcept move assign
+                std::swap(mControl, ioMove.mControl);
+            }
         }
         return *this;
     }
 
     // Copy Ctor
-    weak_ptr (const weak_ptr& inCopy)
+    weak_ptr(const weak_ptr& inCopy)
     {
-        mControl = inCopy.mControl;
-        mControl->IncrementStrong();
+        if (inCopy)
+        {
+            inCopy.mControl->IncrementWeak();
+            mControl = inCopy.mControl;
+        }
     }
 
     // Copy Operand
@@ -394,9 +435,13 @@ public:
         // Copying to self should be a NOP
         if (this != &inCopy)
         {
-            mData = inCopy.mData;
-            mControl = inCopy.mControl;
-            mControl->IncrementStrong();
+            reset(); // Decrement refcount of any previous ControlBlock
+
+            if (inCopy)
+            {
+                inCopy->IncrementWeak();
+                mControl = inCopy.mControl
+            }
         }
         return *this;
     }

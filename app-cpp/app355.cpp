@@ -341,9 +341,9 @@ public:
     double Stop();
 
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> mStart;
-    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd;
-    std::chrono::duration<double, std::milli> mElapsedMs;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStart{};
+    std::chrono::time_point<std::chrono::high_resolution_clock> mEnd{};
+    std::chrono::duration<double, std::milli> mElapsedMs{};
 };
 
 void Timer::Start()
@@ -496,12 +496,15 @@ int main(int inArgc, char* inArgv[])
     auto startTotal = std::chrono::high_resolution_clock::now();
 
     // 4 threads is baseline
+    app355::weak_ptr<app355::SatOrbit> weakTest{};
+
     auto satOrbit0 = app355::SatOrbit::Make(app355::SatOrbit::SatOrbitKind::kMulti);
     app355::shared_ptr<app355::SatOrbit> satOrbit = satOrbit0.release();
     app355::shared_ptr<app355::SatOrbit> satOrbit1 = satOrbit;
     app355::weak_ptr<app355::SatOrbit> satOrbit2 = satOrbit1;
     satOrbit1.reset();
     app355::shared_ptr<app355::SatOrbit> out = satOrbit2.lock();
+    weakTest = out;
 
 
     // meaure time for each section in milliseconds using chrono
