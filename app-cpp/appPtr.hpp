@@ -133,7 +133,7 @@ inline T* unique_ptr<T>::get()
     return mData;
 }
 
-// TRICKY: Variatic template arguments 
+// TRICKY mnfitz 07apr2024: Variatic template arguments 
 // Template that takes any number and type of arguments
 /// @brief Method for creating and allocating a unique_ptr with the given arguments
 template<typename T, typename ...Args>
@@ -208,6 +208,7 @@ public:
     {
         if (ioMove)
         {
+            // swap allows for noexcept move ctor
             std::swap(mData, ioMove.mData);
             std::swap(mControl, ioMove.mControl);
         }
@@ -226,6 +227,7 @@ public:
             //reset(); // noexcept requires us to leave as a turd
             if (ioMove)
             {
+                // swap allows for noexcept move assign
                 std::swap(mData, ioMove.mData);
                 std::swap(mControl, ioMove.mControl);
             }
@@ -374,8 +376,8 @@ private:
     private:
         std::size_t mStrongCount{1}; // Default constructs with initial strong refcount of 1
         std::size_t mWeakCount{0};
-        std::mutex mMutex{};
-        T* mData{}; // Used by weak pointers to obtain a new shared pointer
+        std::mutex mMutex{nullptr};
+        T* mData{nullptr}; // Used by weak pointers to obtain a new shared pointer
     }; // class ControlBlock
 
 private:
@@ -393,11 +395,11 @@ private:
     }
 
 private:
-    T* mData{};
-    ControlBlock* mControl{};
+    T* mData{nullptr};
+    ControlBlock* mControl{nullptr};
 }; // class shared_ptr<T>
 
-// TRICKY: Variatic template arguments 
+// TRICKY mnfitz 04072024: Variatic template arguments 
 // Template that takes any number and type of arguments
 /// @brief Method for creating and allocating a shared_ptr with the given arguments
 template<typename T, typename ...Args>
@@ -569,8 +571,8 @@ public:
     }
 
 private:
-    // TRICKY: "Nested types" from a template class must be prefixed with the keyword 'typename'
-    typename shared_ptr<T>::ControlBlock* mControl{};
+    // TRICKY mnfitz 07apr2024: "Nested types" from a template class must be prefixed with the keyword 'typename'
+    typename shared_ptr<T>::ControlBlock* mControl{nullptr};
 }; // class shared_ptr<T>
 
 } // namespace app355

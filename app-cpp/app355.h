@@ -40,8 +40,11 @@ namespace app355
         double mMeanMotion;
 
     public:
-        OrbitalData(sat355::TLE inTLE, double inLatitude, double inLongitude, double inAltitude)
-            : mTLE{std::move(inTLE)}, mLatitude(inLatitude), mLongitude(inLongitude), mAltitude(inAltitude)
+        OrbitalData(sat355::TLE inTLE, double inLatitude, double inLongitude, double inAltitude) : 
+            mTLE{std::move(inTLE)}, 
+            mLatitude(inLatitude), 
+            mLongitude(inLongitude), 
+            mAltitude(inAltitude)
         {
             mName = mTLE.GetName();
             mMeanMotion = mTLE.GetMeanMotion();
@@ -60,6 +63,7 @@ namespace app355
         {
             return mLatitude;
         }
+
         void SetLatitude(double latitude)
         {
             mLatitude = latitude;
@@ -69,6 +73,7 @@ namespace app355
         {
             return mLongitude;
         }
+
         void SetLongitude(double longitude)
         {
             mLongitude = longitude;
@@ -78,6 +83,7 @@ namespace app355
         {
             return mAltitude;
         }
+        
         void SetAltitude(double altitude)
         {
             mAltitude = altitude;
