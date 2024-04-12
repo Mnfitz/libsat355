@@ -7,6 +7,94 @@
 
 namespace app355 {
 
+namespace detail {
+
+/// @brief ControlBlock is responsible for managing the lifetime 
+    /// of a shared object, and holds 2 counts: mStrongCount and mWeakCount. 
+    /// mStrongCount relates to the number of shared_ptrs with ownership 
+    /// of the data, where mWeakCount refers to the weak_ptrs.
+    template<typename T>
+    class ControlBlock
+    {
+    public:
+        /// @brief Constructs ControlBlock with template data type T
+        /// @param inData data to be managed by controlblock
+        ControlBlock(T* inData) :  
+            mData{inData}
+        {
+            // Do nothing
+        }
+
+        // RO5 Methods added
+        /// @brief dtor is default
+        ~ControlBlock() = default;
+
+        // Copying should not be done, because we use a std::mutex
+        /// @brief Copies not allowed for ControlBlock
+        ControlBlock(const ControlBlock& inCopy) = delete;
+        /// @brief Copies not allowed for ControlBlock
+        ControlBlock& operator=(const ControlBlock& inCopy) = delete;
+
+        /// @brief Increments the strong refcount
+        /// @return a pair of <mStrongCount, mWeakCount>
+        std::pair<std::size_t, std::size_t> IncrementStrong()
+        {
+            std::lock_guard<std::mutex> lock{mMutex};
+            const bool hasDataBeenDeleted = (mStrongCount <= 0);
+            if (!hasDataBeenDeleted)
+            {
+                ++mStrongCount;
+            }
+            return {mStrongCount, mWeakCount};
+        }
+
+        /// @brief Decrements the strong refcount
+        /// @return a pair of <mStrongCount, mWeakCount>
+        std::pair<std::size_t, std::size_t> DecrementStrong()
+        {
+            std::lock_guard<std::mutex> lock{mMutex};
+            // StrongCount is not allowed to change once it reaches 0 and must be deleted
+            assert((mStrongCount > 0) && "Cannot decrement below zero");
+            --mStrongCount;
+            return {mStrongCount, mWeakCount};
+        }
+
+        /// @brief Increments the weak refcount
+        /// @return a pair of <mStrongCount, mWeakCount>
+        std::pair<std::size_t, std::size_t> IncrementWeak()
+        {
+            std::lock_guard<std::mutex> lock{mMutex};
+            ++mWeakCount;
+            return {mStrongCount, mWeakCount};
+        }
+
+        /// @brief Decrements the weak refcount
+        /// @return a pair of <mStrongCount, mWeakCount>
+        std::pair<std::size_t, std::size_t> DecrementWeak()
+        {
+            std::lock_guard<std::mutex> lock{mMutex};
+            // StrongCount is not allowed to change once it reaches 0 and must be deleted
+            assert((mWeakCount > 0) && "Cannot decrement below zero");
+            --mWeakCount;
+            return {mStrongCount, mWeakCount};
+        }
+
+        /// @brief Gets the data ControlBlock is managing
+        /// @return mData
+        T* get()
+        {
+            return mData;
+        }
+
+    private:
+        std::size_t mStrongCount{1}; // Default constructs with initial strong refcount of 1
+        std::size_t mWeakCount{0};
+        std::mutex mMutex{};
+        T* mData{nullptr}; // Used by weak pointers to obtain a new shared pointer
+    }; // class ControlBlock
+
+} // namespace app355::detail
+
 #pragma region unique_ptr
 
 /// @brief std::unique_ptr is a smart pointer that owns and manages a single object through 
@@ -165,7 +253,7 @@ public:
     /// @param inData Template type, allowing any sort of data to be stored
     shared_ptr(T* inData) :
         mData{inData},
-        mControl{new ControlBlock{inData}}
+        mControl{new detail::ControlBlock<T>{inData}}
     {
         // Note: ControlBlock::Ctor{} sets strong count to 1
     }
@@ -297,94 +385,10 @@ public:
     }
 
 private:
-    /// @brief ControlBlock is responsible for managing the lifetime 
-    /// of a shared object, and holds 2 counts: mStrongCount and mWeakCount. 
-    /// mStrongCount relates to the number of shared_ptrs with ownership 
-    /// of the data, where mWeakCount refers to the weak_ptrs.
-    class ControlBlock
-    {
-    public:
-        /// @brief Constructs ControlBlock with template data type T
-        /// @param inData data to be managed by controlblock
-        ControlBlock(T* inData) :  
-            mData{inData}
-        {
-            // Do nothing
-        }
-
-        // RO5 Methods added
-        /// @brief dtor is default
-        ~ControlBlock() = default;
-
-        // Copying should not be done, because we use a std::mutex
-        /// @brief Copies not allowed for ControlBlock
-        ControlBlock(const ControlBlock& inCopy) = delete;
-        /// @brief Copies not allowed for ControlBlock
-        ControlBlock& operator=(const ControlBlock& inCopy) = delete;
-
-        /// @brief Increments the strong refcount
-        /// @return a pair of <mStrongCount, mWeakCount>
-        std::pair<std::size_t, std::size_t> IncrementStrong()
-        {
-            std::lock_guard<std::mutex> lock{mMutex};
-            const bool hasDataBeenDeleted = (mStrongCount <= 0);
-            if (!hasDataBeenDeleted)
-            {
-                ++mStrongCount;
-            }
-            return {mStrongCount, mWeakCount};
-        }
-
-        /// @brief Decrements the strong refcount
-        /// @return a pair of <mStrongCount, mWeakCount>
-        std::pair<std::size_t, std::size_t> DecrementStrong()
-        {
-            std::lock_guard<std::mutex> lock{mMutex};
-            // StrongCount is not allowed to change once it reaches 0 and must be deleted
-            assert((mStrongCount > 0) && "Cannot decrement below zero");
-            --mStrongCount;
-            return {mStrongCount, mWeakCount};
-        }
-
-        /// @brief Increments the weak refcount
-        /// @return a pair of <mStrongCount, mWeakCount>
-        std::pair<std::size_t, std::size_t> IncrementWeak()
-        {
-            std::lock_guard<std::mutex> lock{mMutex};
-            ++mWeakCount;
-            return {mStrongCount, mWeakCount};
-        }
-
-        /// @brief Decrements the weak refcount
-        /// @return a pair of <mStrongCount, mWeakCount>
-        std::pair<std::size_t, std::size_t> DecrementWeak()
-        {
-            std::lock_guard<std::mutex> lock{mMutex};
-            // StrongCount is not allowed to change once it reaches 0 and must be deleted
-            assert((mWeakCount > 0) && "Cannot decrement below zero");
-            --mWeakCount;
-            return {mStrongCount, mWeakCount};
-        }
-
-        /// @brief Gets the data ControlBlock is managing
-        /// @return mData
-        T* get()
-        {
-            return mData;
-        }
-
-    private:
-        std::size_t mStrongCount{1}; // Default constructs with initial strong refcount of 1
-        std::size_t mWeakCount{0};
-        std::mutex mMutex{nullptr};
-        T* mData{nullptr}; // Used by weak pointers to obtain a new shared pointer
-    }; // class ControlBlock
-
-private:
     template <typename T>
     friend class weak_ptr;
 
-    shared_ptr(ControlBlock* inBlock)
+    shared_ptr(detail::ControlBlock<T>* inBlock)
     {
         if (inBlock != nullptr)
         {
@@ -396,7 +400,7 @@ private:
 
 private:
     T* mData{nullptr};
-    ControlBlock* mControl{nullptr};
+    detail::ControlBlock<T>* mControl{nullptr};
 }; // class shared_ptr<T>
 
 // TRICKY mnfitz 04072024: Variatic template arguments 
@@ -572,7 +576,7 @@ public:
 
 private:
     // TRICKY mnfitz 07apr2024: "Nested types" from a template class must be prefixed with the keyword 'typename'
-    typename shared_ptr<T>::ControlBlock* mControl{nullptr};
+    typename detail::ControlBlock<T>* mControl{nullptr};
 }; // class shared_ptr<T>
 
 } // namespace app355
