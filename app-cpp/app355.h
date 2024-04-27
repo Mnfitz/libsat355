@@ -106,6 +106,7 @@ namespace app355
             kSingle,
             kMulti
         };
+        using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
 
         // Interface
     public:
@@ -123,11 +124,13 @@ namespace app355
         /// @brief Turns the raw TLE data into latitude, longitude, and altitude
         /// @param inTleVector Vector of parsed TLE data
         /// @return Vector of computed orbital data
-        std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE> &inTleVector);
-
+        //std::vector<OrbitalData> CalculateOrbitalData(const std::vector<sat355::TLE> &inTleVector);
+        std::shared_ptr<OrbitalDataVector> CalculateOrbitalData(const std::vector<sat355::TLE>& inTleVector);
+        
         /// @brief Sorts the vector of orbital data by their mean motion
         /// @param ioOrbitalVector Vector of unsorted orbital data
-        void SortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector);
+        //void SortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector);
+        void SortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector);
 
         /// @brief Satellites in close proximity with a similar orbital path are grouped together, and solo satellites are discarded
         /// @param inOrbitalVector Vector of all sorted orbital data by which the train list is made from
@@ -147,15 +150,16 @@ namespace app355
 
         // Types
     protected:
-        using OrbitalDataVector = std::tuple<std::mutex, std::vector<OrbitalData>>;
         using orbit_iterator = std::vector<OrbitalData>::iterator;
 
         // Implementation
     private:
         // SatOrbit
         virtual std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) = 0;
-        virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE> &inTLEVector, OrbitalDataVector &ioDataVector) = 0;
-        virtual void OnSortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector) = 0;
+        //virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE> &inTLEVector, OrbitalDataVector &ioDataVector) = 0;
+        //virtual void OnSortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector) = 0;
+        virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
+        virtual void OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
         virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData> &inOrbitalVector) = 0;
         virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>> &inTrainVector) = 0;
     };
