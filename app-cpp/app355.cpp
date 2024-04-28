@@ -21,10 +21,8 @@ protected:
 private:
     // SatOrbit
     std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) override;
-    //void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    //void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
-    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) override;
-    void OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector) override;
+    void OnCalculateOrbitalDataAsync(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) override;
+    void OnSortOrbitalVectorAsync(std::shared_ptr<OrbitalDataVector> ioDataVector) override;
     std::vector<std::vector<app355::OrbitalData>> OnCreateTrains(const std::vector<app355::OrbitalData>& inOrbitalVector) override;
     void OnPrintTrains(const std::vector<std::vector<app355::OrbitalData>>& inTrainVector) override;
 };
@@ -36,7 +34,7 @@ std::unique_ptr<SatOrbitSingle> SatOrbitSingle::Make()
 }
 
 // Single Threaded
-void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector)
+void SatOrbitSingle::OnCalculateOrbitalDataAsync(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector)
 {   
     auto tleBegin = inTLEVector.begin();
     auto tleEnd = inTLEVector.end();
@@ -74,7 +72,7 @@ void SatOrbitSingle::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTL
     }
 }
 
-void SatOrbitSingle::OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector)
+void SatOrbitSingle::OnSortOrbitalVectorAsync(std::shared_ptr<OrbitalDataVector> ioDataVector)
 {
     auto& [mutex, orbitalVector] = *ioDataVector;
     std::sort(orbitalVector.begin(), orbitalVector.end(), [](const app355::OrbitalData& inLHS, const app355::OrbitalData& inRHS) -> bool
@@ -244,13 +242,10 @@ private:
 // Implementation
 private:
     // SatOrbit
-    //void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, OrbitalDataVector& ioDataVector) override;
-    //void OnSortOrbitalVector(std::vector<app355::OrbitalData>& ioOrbitalVector) override;
-    void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) override;
-    void OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector) override;
+    void OnCalculateOrbitalDataAsync(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) override;
+    void OnSortOrbitalVectorAsync(std::shared_ptr<OrbitalDataVector> ioDataVector) override;
 
     // SatOrbitMulti
-    //virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleBegin, const tle_const_iterator& inTleEnd, OrbitalDataVector& ioDataVector);
     virtual void OnCalculateOrbitalDataMulti(const tle_const_iterator& inTleBegin, const tle_const_iterator& inTleEnd, std::shared_ptr<OrbitalDataVector> ioDataVector);
     virtual void OnSortOrbitalVectorMulti(orbit_iterator& inBegin, orbit_iterator& inEnd);
     virtual void OnSortMergeVectorMulti(orbit_iterator& ioBegin, orbit_iterator& ioMid, orbit_iterator& ioEnd);
@@ -267,12 +262,12 @@ std::unique_ptr<SatOrbitMulti> SatOrbitMulti::Make(std::size_t inThreads)
 }
 
  // SatOrbit
-void SatOrbitMulti::OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector)
+void SatOrbitMulti::OnCalculateOrbitalDataAsync(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector)
 {
-    OnCalculateOrbitalDataMulti(inTLEVector.begin(), inTLEVector.end(), ioDataVector);
+    OnCalculateOrbitalDataMulti(inTLEVector.begin(), inTLEVector.end(), std::move(ioDataVector));
 }
 
-void SatOrbitMulti::OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector)
+void SatOrbitMulti::OnSortOrbitalVectorAsync(std::shared_ptr<OrbitalDataVector> ioDataVector)
 {
     auto& [mutex, orbitalVector] = *ioDataVector;
     // Multithreaded sort
@@ -402,13 +397,13 @@ std::vector<sat355::TLE> SatOrbit::ReadFromFile(int inArgc, char* inArgv[])
 std::shared_ptr<SatOrbit::OrbitalDataVector> SatOrbit::CalculateOrbitalData(const std::vector<sat355::TLE>& inTleVector)
 {
     auto dataVector = std::make_shared<OrbitalDataVector>();
-    OnCalculateOrbitalData(inTleVector, dataVector);
+    OnCalculateOrbitalDataAsync(inTleVector, dataVector);
     return dataVector;
 }
 
 void SatOrbit::SortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector)
 {
-    OnSortOrbitalVector(std::move(ioDataVector));
+    OnSortOrbitalVectorAsync(std::move(ioDataVector));
     // since this interface simply calls the implementation, there is no
     // need to bump the ref count again; therefore move to keep refcount at 2
 }

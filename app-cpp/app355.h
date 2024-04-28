@@ -156,10 +156,8 @@ namespace app355
     private:
         // SatOrbit
         virtual std::vector<sat355::TLE> OnReadFromFile(int inArgc, char* inArgv[]) = 0;
-        //virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE> &inTLEVector, OrbitalDataVector &ioDataVector) = 0;
-        //virtual void OnSortOrbitalVector(std::vector<OrbitalData> &ioOrbitalVector) = 0;
-        virtual void OnCalculateOrbitalData(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
-        virtual void OnSortOrbitalVector(std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
+        virtual void OnCalculateOrbitalDataAsync(const std::vector<sat355::TLE>& inTLEVector, std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
+        virtual void OnSortOrbitalVectorAsync(std::shared_ptr<OrbitalDataVector> ioDataVector) = 0;
         virtual std::vector<std::vector<OrbitalData>> OnCreateTrains(const std::vector<OrbitalData> &inOrbitalVector) = 0;
         virtual void OnPrintTrains(const std::vector<std::vector<OrbitalData>> &inTrainVector) = 0;
     };
